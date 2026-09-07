@@ -1,0 +1,2367 @@
+<!DOCTYPE html>
+<html lang="es" class="light-style layout-menu-fixed" dir="ltr"
+  data-theme="theme-default" data-assets-path="../assets/" data-template="vertical-menu-template-free">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+  <title>Dashboard | Maquila Kellogg's</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="../assets/vendor/fonts/boxicons.css"/>
+  <link rel="stylesheet" href="../assets/vendor/css/core.css" class="template-customizer-core-css"/>
+  <link rel="stylesheet" href="../assets/vendor/css/theme-default.css" class="template-customizer-theme-css"/>
+  <link rel="stylesheet" href="../assets/css/demo.css"/>
+  <link rel="stylesheet" href="../assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.css"/>
+  <link rel="stylesheet" href="../assets/vendor/libs/apex-charts/apex-charts.css"/>
+  <script src="../assets/vendor/js/helpers.js"></script>
+  <script src="../assets/js/config.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <style>
+    /* ── Componentes propios ── */
+    .pulse{width:7px;height:7px;border-radius:50%;background:#71dd37;animation:pa 2s infinite;display:inline-block;}
+    @keyframes pa{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.5)}}
+    .reloj-wrap{display:flex;align-items:center;gap:6px;background:#f5f5f9;border:1px solid #d9dee3;border-radius:20px;padding:3px 10px;font-size:.68rem;font-weight:600;color:#566a7f;}
+    .comp-table{width:100%;border-collapse:collapse;font-size:.72rem;}
+    .comp-table th{background:#003087;color:#fff;padding:4px 8px;text-align:center;font-size:.65rem;white-space:nowrap;}
+    .comp-table td{padding:3px 8px;border-bottom:1px solid #f1f5f9;text-align:center;font-weight:500;}
+    .comp-table tr:nth-child(even) td{background:#f8fafc;}
+    .comp-table .row-label{text-align:left;font-weight:700;color:#1E3A5F;font-size:.68rem;background:#f0f4ff!important;}
+    .comp-table .hoy{background:#eff6ff!important;font-weight:700;color:#003087;}
+    .comp-table .ayer{color:#374151;}
+    .comp-table .ante{color:#9ca3af;}
+    .up{color:#16a34a;font-size:.65rem;}
+    .dn{color:#dc2626;font-size:.65rem;}
+    .eq{color:#9ca3af;font-size:.65rem;}
+    .chip{border-radius:20px;padding:1px 7px;font-size:.62rem;font-weight:700;display:inline-block;}
+    .ok{background:#dcfce7;color:#16a34a;}
+    .warn{background:#fef3c7;color:#d97706;}
+    .bad{background:#fee2e2;color:#dc2626;}
+    .htable{width:100%;border-collapse:collapse;font-size:.68rem;}
+    .htable th{background:#1565C0;color:#fff;padding:4px 7px;text-align:center;font-size:.63rem;white-space:nowrap;position:sticky;top:0;}
+    .htable td{padding:3px 7px;border-bottom:1px solid #f1f5f9;text-align:center;white-space:nowrap;}
+    .htable tr:nth-child(even) td{background:#eff6ff;}
+    .htable tr:hover td{background:#dbeafe;}
+    .hbox{overflow:auto;max-height:110px;}
+    .empty{text-align:center;padding:1rem;color:#94a3b8;}
+    .empty i{font-size:1.4rem;display:block;margin-bottom:.2rem;}
+
+    /* ══════════════════════════════════════════
+       PANTALLA COMPLETA — sin scroll, sin gaps
+       ══════════════════════════════════════════ */
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    html, body {
+      width: 100%; height: 100%;
+      margin: 0; padding: 0;
+      overflow: hidden;
+    }
+
+    /* Wrapper ocupa exactamente la ventana */
+    .layout-wrapper {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Container: sidebar + página, sin overflow */
+    .layout-container {
+      display: flex;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    /* Sidebar fijo, tamaño justo */
+    .layout-menu {
+      width: 160px !important;
+      min-width: 160px !important;
+      max-width: 160px !important;
+      height: 100vh !important;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    /* Página principal ocupa todo el ancho restante */
+    .layout-page {
+      flex: 1;
+      min-width: 0;
+      width: calc(100vw - 160px) !important;
+      padding-left: 0 !important;
+      margin-left: 160px !important;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Navbar delgada */
+    #layout-navbar {
+      height: 40px !important;
+      min-height: 40px !important;
+      max-height: 40px !important;
+      padding: 0 12px !important;
+      flex-shrink: 0;
+    }
+
+    /* Content-wrapper ocupa lo que queda después del navbar */
+    .content-wrapper {
+      flex: 1;
+      height: calc(100vh - 40px) !important;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Zona scrollable del contenido */
+    .container-xxl.flex-grow-1 {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 0.3rem 0.8rem !important;
+      /* Scrollbar discreta */
+      scrollbar-width: thin;
+      scrollbar-color: #d9dee3 transparent;
+    }
+    .container-xxl.flex-grow-1::-webkit-scrollbar { width: 4px; }
+    .container-xxl.flex-grow-1::-webkit-scrollbar-thumb { background: #d9dee3; border-radius: 4px; }
+
+    /* ══════════════════════════════════════════
+       ACOPLAR EL CONTENIDO A TODA LA PANTALLA
+       ══════════════════════════════════════════ */
+    .container-xxl.flex-grow-1 {
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+    }
+    /* Las 2 filas principales reparten todo el alto disponible */
+    .container-xxl.flex-grow-1 > .row {
+      flex: 1 1 0;
+      min-height: 0;
+      margin: 0 !important;
+    }
+    .container-xxl.flex-grow-1 > .row:first-of-type { flex-grow: 1; }
+    .container-xxl.flex-grow-1 > .row:last-of-type  { flex-grow: 1.45; }
+
+    /* Columnas de primer nivel -> contenedores flex verticales */
+    .container-xxl.flex-grow-1 > .row > [class*="col-"] {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      margin-bottom: 0 !important;
+    }
+    /* Su tarjeta o fila anidada llena el alto de la columna */
+    .container-xxl.flex-grow-1 > .row > [class*="col-"] > .card,
+    .container-xxl.flex-grow-1 > .row > [class*="col-"] > .row {
+      flex: 1 1 auto;
+      min-height: 0;
+      margin: 0 !important;
+    }
+    /* Filas anidadas (Objetivo/Producción, Cambios/Personal/Alertas) */
+    .container-xxl.flex-grow-1 > .row > [class*="col-"] > .row > [class*="col-"] {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      margin-bottom: 0 !important;
+    }
+    .container-xxl.flex-grow-1 > .row > [class*="col-"] > .row > [class*="col-"] > .card {
+      flex: 1 1 auto;
+      min-height: 0;
+      margin: 0 !important;
+    }
+    /* El contenido de cada tarjeta se centra verticalmente en su alto */
+    .container-xxl.flex-grow-1 .card > .card-body {
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    /* Tarjeta grande (Cumplimiento y Proyección): fila interna a toda altura */
+    .container-xxl.flex-grow-1 .card > .row {
+      flex: 1 1 auto;
+      min-height: 0;
+    }
+    .container-xxl.flex-grow-1 .card > .row > [class*="col-"] {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    /* Footer mínimo */
+    .content-footer {
+      flex-shrink: 0;
+      padding: 3px 12px !important;
+      font-size: .64rem !important;
+    }
+
+
+
+    
+
+    /* ── Reducir todos los espacios ── */
+    .row        { margin-bottom: 0 !important; --bs-gutter-x: 0.5rem; }
+    .mb-4       { margin-bottom: 0.3rem !important; }
+    .mb-3       { margin-bottom: 0.2rem !important; }
+    .g-3        { gap: 0.3rem !important; }
+    .gap-3      { gap: 0.3rem !important; }
+    .pb-3       { padding-bottom: 0.3rem !important; }
+    .pt-3       { padding-top: 0.3rem !important; }
+    .p-4        { padding: 0.4rem !important; }
+    .px-4       { padding-left: 0.4rem !important; padding-right: 0.4rem !important; }
+
+    /* ── Cards compactas ── */
+    .card             { border-radius: 5px !important; margin-bottom: 0; }
+    .card-body        { padding: 0.35rem 0.55rem !important; }
+    .card-header      { padding: 0.3rem 0.55rem !important; }
+    .card-body.pt-0   { padding-top: 0.2rem !important; }
+    .card-body.px-0   { padding-left: 0 !important; padding-right: 0 !important; }
+
+    /* ── Tipografía comprimida ── */
+    h3.card-title,
+    .card-title h3    { font-size: .95rem !important; margin-bottom: 0.05rem !important; }
+    h4                { font-size: .85rem !important; margin-bottom: 0 !important; }
+    h5                { font-size: .75rem !important; margin-bottom: 0 !important; }
+    h6                { font-size: .70rem !important; margin-bottom: 0 !important; }
+    p                 { font-size: .68rem !important; margin-bottom: 0.05rem !important; }
+    small             { font-size: .65rem !important; }
+    .text-muted       { font-size: .65rem !important; }
+    span.fw-semibold,
+    span.d-block      { font-size: .68rem !important; }
+    .fw-semibold      { font-size: .68rem !important; }
+
+    /* ── Avatares pequeños ── */
+    .avatar           { width: 24px !important; height: 24px !important; }
+    .avatar img,
+    .avatar-initial   { width: 24px !important; height: 24px !important;
+                        font-size: .6rem !important; line-height: 24px !important; }
+
+    /* ── Barra de progreso ── */
+    .progress { height: 5px !important; }
+
+    /* ── Imagen banner ── */
+    .col-sm-5.text-center img { height: 55px !important; }
+
+    /* ── Nav pills ── */
+    .nav-pills .nav-link { padding: 0.18rem 0.5rem !important; font-size: .67rem !important; }
+
+    /* ── Badges ── */
+    .badge { font-size: .62rem !important; padding: 2px 6px !important; }
+
+    /* ── Lista cambios maquila ── */
+    .card-body ul li.d-flex { margin-bottom: 0.15rem !important; padding-bottom: 0.15rem !important; }
+
+    /* ── Gráficas ── */
+    #chartCumpl, #chartProd { min-height: unset !important; }
+
+    /* ══════════════════════════════════════════
+       LETRAS MÁS GRANDES — el panel ocupa toda la pantalla
+       ══════════════════════════════════════════ */
+    .container-xxl.flex-grow-1 h3.card-title,
+    .container-xxl.flex-grow-1 .card-title h3      { font-size: 2.4rem !important; line-height: 1.05 !important; margin-bottom: .25rem !important; }
+    .container-xxl.flex-grow-1 h4                  { font-size: 1.75rem !important; line-height: 1.1 !important; }
+    .container-xxl.flex-grow-1 h5                  { font-size: 1.05rem !important; }
+    .container-xxl.flex-grow-1 h5.card-title       { font-size: 1.3rem !important; }
+    .container-xxl.flex-grow-1 h6                  { font-size: 1.05rem !important; }
+    .container-xxl.flex-grow-1 p                   { font-size: .95rem !important; }
+    .container-xxl.flex-grow-1 small,
+    .container-xxl.flex-grow-1 .text-muted         { font-size: .85rem !important; }
+    .container-xxl.flex-grow-1 span.fw-semibold,
+    .container-xxl.flex-grow-1 span.d-block,
+    .container-xxl.flex-grow-1 .fw-semibold        { font-size: 1rem !important; }
+    .container-xxl.flex-grow-1 .card-header        { font-size: 1.15rem !important; }
+    .container-xxl.flex-grow-1 .badge              { font-size: .82rem !important; padding: 4px 10px !important; }
+    .container-xxl.flex-grow-1 .card-body          { padding: 0.9rem 1.15rem !important; }
+    .container-xxl.flex-grow-1 .avatar,
+    .container-xxl.flex-grow-1 .avatar img,
+    .container-xxl.flex-grow-1 .avatar-initial     { width: 40px !important; height: 40px !important; line-height: 40px !important; font-size: .95rem !important; }
+    .container-xxl.flex-grow-1 .progress           { height: 10px !important; }
+    .container-xxl.flex-grow-1 #bannerFecha,
+    .container-xxl.flex-grow-1 #bannerAlerta       { font-size: 1rem !important; }
+    .container-xxl.flex-grow-1 .btn-sm             { font-size: .95rem !important; padding: .5rem 1rem !important; }
+    .container-xxl.flex-grow-1 #alertaTexto        { font-size: 1.5rem !important; }
+    .container-xxl.flex-grow-1 .col-sm-5.text-center img { height: 120px !important; }
+
+    /* ── Menú lateral ── */
+    .menu-inner > .menu-item > .menu-link        { padding: 0.25rem 0.8rem !important; }
+    .menu-inner .menu-sub .menu-link             { padding: 0.15rem 0.8rem 0.15rem 1.6rem !important; }
+    .menu-header                                 { padding: 0.25rem 0.8rem 0.05rem !important; }
+    .menu-inner .menu-item .menu-link div        { font-size: .70rem !important; }
+    .menu-header-text                            { font-size: .55rem !important; }
+    .menu-icon                                   { margin-right: 0.25rem !important; font-size: .85rem !important; }
+    .app-brand.demo                              { height: 44px !important; padding: 0 0.8rem !important; }
+    .app-brand-text.demo                         { font-size: .95rem !important; }
+
+    /* ── Ocultar columna vacía a la derecha ── */
+    .buy-now { display: none !important; }
+
+    /* ── Toggle sidebar ── */
+    #sidebarToggle {
+      position: fixed;
+      top: 8px;
+      left: 8px;
+      z-index: 9999;
+      background: #696cff;
+      border: none;
+      border-radius: 6px;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      transition: background .15s;
+    }
+    #sidebarToggle:hover { background: #5f61e6; }
+    #sidebarToggle i { color: #fff; font-size: 1rem; }
+
+    /* Estado oculto del sidebar */
+    .sidebar-hidden .layout-menu {
+      width: 0 !important;
+      min-width: 0 !important;
+      overflow: hidden;
+      transition: width .2s ease;
+    }
+    .sidebar-hidden .layout-page {
+      width: 100vw !important;
+      margin-left: 0 !important;
+      transition: all .2s ease;
+    }
+    .layout-menu { transition: width .2s ease; }
+    .layout-page { transition: all .2s ease; }
+
+    /* ── container-xxl sin max-width fijo para aprovechar todo el ancho ── */
+    .container-xxl {
+      max-width: 100% !important;
+      padding-left: 0.5rem !important;
+      padding-right: 0.5rem !important;
+    }
+    
+    /* ══════════════════════════════════════
+       PRESENTADOR PANTALLA COMPLETA
+       ══════════════════════════════════════ */
+    #presentadorOverlay {
+      display:none; position:fixed; inset:0; z-index:99999;
+      background:#000; flex-direction:column;
+    }
+    #presentadorOverlay.activo { display:flex; }
+
+    #slideCanvas {
+      flex:1; display:flex; align-items:center; justify-content:center;
+      overflow:hidden; position:relative;
+    }
+    #slideCanvas img {
+      max-width:100%; max-height:100%; object-fit:contain;
+      display:block;
+    }
+    #slideCanvas .slide-placeholder {
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      color:#fff; text-align:center; padding:2rem;
+      width:100%; height:100%;
+    }
+    #slideCanvas .slide-placeholder h1 { font-size:3rem; margin-bottom:1rem; }
+    #slideCanvas .slide-placeholder p  { font-size:1.4rem; opacity:.7; }
+
+    /* Barra inferior controles */
+    #presControls {
+      background:rgba(0,0,0,.85); padding:10px 20px;
+      display:flex; align-items:center; gap:12px; flex-shrink:0;
+      border-top:1px solid #333;
+    }
+    #presControls button {
+      background:#696cff; border:none; color:#fff; border-radius:6px;
+      padding:6px 14px; cursor:pointer; font-size:.82rem; font-weight:600;
+      transition:background .15s;
+    }
+    #presControls button:hover { background:#5f61e6; }
+    #presControls button.danger { background:#dc2626; }
+    #presControls button.danger:hover { background:#b91c1c; }
+    #presControls button.neutral { background:#374151; }
+    #presControls button.neutral:hover { background:#1f2937; }
+
+    #slideCounter { color:#fff; font-size:.85rem; font-weight:600; min-width:80px; text-align:center; }
+
+    #timerBar {
+      flex:1; height:6px; background:#333; border-radius:3px; overflow:hidden;
+    }
+    #timerFill {
+      height:100%; background:#71dd37; border-radius:3px;
+      transition:width 1s linear;
+    }
+    #timerLabel { color:#71dd37; font-size:.82rem; font-weight:700; min-width:38px; text-align:right; }
+
+    .pres-sep { width:1px; height:24px; background:#555; flex-shrink:0; }
+
+    /* Input segundos */
+    #inputSecs {
+      width:52px; background:#222; border:1px solid #444; border-radius:5px;
+      color:#fff; font-size:.82rem; padding:4px 6px; text-align:center;
+    }
+
+    /* Modal PPTX */
+    #modalPPTX {
+      display:none; position:fixed; inset:0; background:rgba(0,0,0,.55);
+      z-index:99990; align-items:center; justify-content:center;
+    }
+    #modalPPTX.abierto { display:flex; }
+    #modalPPTX .mpCard {
+      background:#fff; border-radius:12px; width:440px; overflow:hidden;
+      box-shadow:0 20px 60px rgba(0,0,0,.3);
+    }
+    #modalPPTX .mpHead {
+      background:#003087; color:#fff; padding:14px 18px;
+      display:flex; align-items:center; justify-content:between; gap:10px;
+    }
+    #modalPPTX .mpHead h5 { margin:0; flex:1; font-size:.95rem; }
+    #modalPPTX .mpBody { padding:18px; }
+    #modalPPTX .mpFoot { padding:10px 18px; border-top:1px solid #f1f5f9; display:flex; justify-content:flex-end; gap:8px; }
+    #dzPptx {
+      border:2px dashed #d9dee3; border-radius:8px; padding:2rem; text-align:center;
+      cursor:pointer; transition:border-color .2s;
+    }
+    #dzPptx:hover { border-color:#696cff; }
+    #dzPptx i { font-size:2.5rem; color:#696cff; display:block; margin-bottom:.5rem; }
+    #pptxMsg { margin-top:10px; font-size:.78rem; font-weight:600; display:none; }
+
+
+
+    /* ═══════════════════════════════════════════════════════════
+       PRESENTADOR TV — mismo estilo que el dashboard
+       ═══════════════════════════════════════════════════════════ */
+
+    /* Gráfica de barra inline SVG */
+    .tv-spark { width:100%; height:28px; margin-top:4px; }
+    .tv-bar-wrap { display:flex; align-items:flex-end; gap:3px; height:28px; width:100%; }
+    .tv-bar-seg { border-radius:2px 2px 0 0; min-width:4px; flex:1; }
+    .tv-gauge { position:relative; width:90px; height:46px; margin:6px auto 0; }
+    .tv-gauge svg { width:90px; height:46px; }
+
+    /* Overlay raíz */
+    #tvOverlay {
+      display: none; position: fixed; inset: 0; z-index: 199999;
+      background: #f5f5f9; flex-direction: column;
+      font-family: 'Public Sans', sans-serif;
+    }
+    #tvOverlay.activo { display: flex; }
+
+    /* Barra superior — igual que el navbar del dash */
+    #tvHeader {
+      height: 48px; flex-shrink: 0;
+      background: #fff;
+      border-bottom: 1px solid #d9dee3; 
+      display: flex; align-items: center;
+      padding: 0 20px; gap: 16px;
+      box-shadow: 0 1px 6px rgba(67,89,113,.12);
+    }
+    #tvHeader .tv-brand {
+      display: flex; align-items: center; gap: 8px;
+      font-size: .95rem; font-weight: 700; color: #566a7f;
+    }
+    #tvHeader .tv-brand svg { flex-shrink: 0; }
+    #tvHeader .tv-titulo {
+      flex: 1; font-size: .88rem; font-weight: 600;
+      color: #566a7f; text-align: center;
+    }
+    #tvHeader .tv-reloj {
+      font-size: .85rem; font-weight: 700; color: #696cff;
+      background: #f0f0ff; border: 1px solid #d5d5ff;
+      border-radius: 20px; padding: 3px 12px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .tv-pulse { width:7px;height:7px;border-radius:50%;background:#71dd37;
+      animation:pa 2s infinite;display:inline-block; }
+
+    /* Área de slides */
+    #tvContent {
+      flex: 1; overflow: hidden;
+      display: flex; align-items: stretch;
+      padding: 14px 18px;
+      min-height: 0;
+    }
+    /* El div wrapper que rodea cada lámina ocupa todo */
+    #tvContent > div {
+      width: 100%; height: 100%;
+      display: flex; flex-direction: column;
+      position: relative;
+    }
+
+    /* ── Barra de controles — oculta, aparece al hover ── */
+    #tvBar {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 299999;
+      background: rgba(255,255,255,0.97);
+      border-top: 1px solid #d9dee3;
+      box-shadow: 0 -2px 12px rgba(67,89,113,.15);
+      padding: 8px 24px; gap: 12px;
+      display: flex; align-items: center;
+      transform: translateY(100%);
+      transition: transform .25s ease;
+    }
+    /* La barra aparece solo cuando JS agrega .tv-bar-visible */
+    #tvBar.tv-bar-visible { transform: translateY(0); }
+
+    #tvBar button {
+      background: #696cff; border: none; color: #fff;
+      border-radius: 6px; padding: 5px 14px; cursor: pointer;
+      font-size: .78rem; font-weight: 600;
+      transition: background .15s;
+      white-space: nowrap;
+    }
+    #tvBar button:hover { background: #5f61e6; }
+    #tvBar button.tv-exit { background: #ff3e1d; }
+    #tvBar button.tv-exit:hover { background: #d73518; }
+    #tvBar button.tv-pause { background: #fd7e14; }
+    #tvBar button.tv-pause:hover { background: #e06c0c; }
+
+    #tvBarTimer { flex: 1; height: 5px; background: #e7e7ff; border-radius: 3px; overflow: hidden; }
+    #tvBarFill { height: 100%; background: #696cff; border-radius: 3px; transition: width 1s linear; }
+    #tvBarLabel { font-size: .75rem; font-weight: 700; color: #696cff; min-width: 30px; }
+    #tvBarName { font-size: .75rem; color: #a8b8cc; font-weight: 600; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    #tvBarNum  { font-size: .75rem; color: #a8b8cc; font-weight: 600; min-width: 44px; text-align: center; }
+    #tvSecsIn  { width: 46px; background: #f0f0ff; border: 1px solid #d5d5ff; border-radius: 5px;
+                 color: #696cff; font-size: .75rem; padding: 3px 5px; text-align: center; }
+    .tv-sep { width:1px; height:20px; background:#e7e7ff; flex-shrink:0; }
+
+    /* Dots */
+    #tvDots { display: flex; gap: 5px; align-items: center; }
+    .tv-dot { width: 7px; height: 7px; border-radius: 50%; background: #e7e7ff; transition: all .3s; cursor: pointer; }
+    .tv-dot.act { background: #696cff; width: 18px; border-radius: 4px; }
+
+    /* ── Fade entre slides ── */
+    @keyframes tvIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+    .tv-in { animation: tvIn 0.4s ease forwards; }
+
+    /* ══ LOGO CLC EN TV HEADER ══ */
+    .tv-clc-logo {
+      display: flex; align-items: center; gap: 10px;
+      flex-shrink: 0;
+    }
+    .tv-clc-logo img {
+      height: 36px; width: auto;
+      filter: drop-shadow(0 2px 6px rgba(0,48,135,.18));
+      border-radius: 4px;
+    }
+    .tv-clc-text {
+      display: flex; flex-direction: column; line-height: 1.1;
+    }
+    .tv-clc-text .clc-main {
+      font-size: .95rem; font-weight: 900; color: #003087;
+      letter-spacing: .04em; text-transform: uppercase;
+    }
+    .tv-clc-text .clc-sub {
+      font-size: .62rem; font-weight: 600; color: #a8b8cc;
+      letter-spacing: .08em; text-transform: uppercase;
+    }
+
+    /* ══ WATERMARK MARCA EN CADA LÁMINA ══ */
+
+    /* Watermark esquina — esquina inferior derecha */
+    .tv-brand-watermark {
+      position: absolute;
+      bottom: 18px; right: 24px;
+      display: flex; flex-direction: column;
+      align-items: flex-end; gap: 6px;
+      pointer-events: none; z-index: 10;
+      animation: tvIn 0.8s ease forwards;
+    }
+    .tv-brand-watermark img {
+      height: 70px; width: auto;
+      opacity: 0.13;
+      filter: grayscale(10%) brightness(0.95);
+      border-radius: 8px;
+      display: block;
+    }
+    .tv-brand-watermark .wm-label {
+      font-size: 1.05rem; font-weight: 900;
+      letter-spacing: .22em; text-transform: uppercase;
+      opacity: 0.12;
+      font-family: 'Public Sans', sans-serif;
+      text-align: right; line-height: 1;
+      text-shadow: none;
+    }
+
+    /* Watermark gigante centrado — láminas hero */
+    .tv-brand-wm-center {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none; z-index: 0;
+      text-align: center;
+      animation: tvIn 0.8s ease forwards;
+    }
+    .tv-brand-wm-center img {
+      height: 220px; width: auto;
+      opacity: 0.07;
+      filter: grayscale(15%) brightness(0.95);
+      border-radius: 14px;
+      display: block;
+      margin: 0 auto;
+    }
+    .tv-brand-wm-center .wm-big-label {
+      font-size: 4rem; font-weight: 900;
+      letter-spacing: .28em; text-transform: uppercase;
+      opacity: 0.065;
+      font-family: 'Public Sans', sans-serif;
+      white-space: nowrap;
+      margin-top: -8px;
+      display: block;
+    }
+
+    /* El contenido real siempre encima del watermark */
+
+    /* ══ LÁMINA GENÉRICA — ocupa TODO el espacio disponible ══ */
+    .tv-slide {
+      width: 100%; height: 100%;
+      display: flex; flex-direction: column;
+      gap: 12px;
+      flex: 1; min-height: 0;
+    }
+    .tv-slide.tv-in { position: relative; z-index: 1; width: 100%; height: 100%; flex: 1; }
+
+    /* Título de sección — igual que card-header del dash */
+    .tv-sec-title {
+      font-size: 1rem; font-weight: 700; color: #566a7f;
+      padding: 0 4px 8px; border-bottom: 2px solid #696cff;
+      margin-bottom: 4px;
+    }
+
+    /* Grid KPIs (6 tarjetas) */
+    .tv-grid-6 { display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(2,1fr); gap:12px; flex:1; min-height:0; }
+    .tv-grid-4 { display:grid; grid-template-columns:repeat(2,1fr); grid-template-rows:repeat(2,1fr); gap:12px; flex:1; min-height:0; }
+    .tv-grid-2c { display:grid; grid-template-columns:1fr 1fr; gap:12px; flex:1; min-height:0; }
+
+    /* Tarjeta KPI — mismo estilo card del dashboard */
+    .tv-card {
+      background: #fff; border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(67,89,113,.1);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      text-align: center; padding: 14px;
+      position: relative; overflow: hidden;
+    }
+    .tv-card::before {
+      content:''; position:absolute; top:0;left:0;right:0;height:3px;
+    }
+    .tv-card.c-blue::before   { background:#696cff; }
+    .tv-card.c-green::before  { background:#71dd37; }
+    .tv-card.c-orange::before { background:#fd7e14; }
+    .tv-card.c-red::before    { background:#ff3e1d; }
+    .tv-card.c-cyan::before   { background:#03c3ec; }
+    .tv-card.c-purple::before { background:#a855f7; }
+    .tv-card.c-dark::before   { background:#566a7f; }
+
+    .tv-card-icon { font-size:1.6rem; margin-bottom:6px; line-height:1; }
+    .tv-card-label {
+      font-size:.7rem; font-weight:600; text-transform:uppercase;
+      letter-spacing:.07em; color:#a8b8cc; margin-bottom:6px;
+    }
+    .tv-card-val  { font-size:2.8rem; font-weight:800; line-height:1; color:#566a7f; margin-bottom:4px; }
+    .tv-card-sub  { font-size:.72rem; color:#a8b8cc; }
+    .tv-card-tend { font-size:.75rem; margin-top:5px; }
+
+    /* Tarjeta de cumplimiento hero */
+    .tv-hero {
+      background:#fff; border-radius:8px;
+      box-shadow:0 2px 8px rgba(67,89,113,.1);
+      display:flex; flex-direction:column;
+      align-items:center; justify-content:center;
+      padding:20px; text-align:center; flex:1;
+    }
+    .tv-hero-pct { font-size:7rem; font-weight:900; line-height:1; }
+    .tv-hero-label { font-size:.85rem; color:#a8b8cc; font-weight:600; margin-top:6px; }
+    .tv-progbar { width:100%; height:10px; background:#e7e7ff; border-radius:5px; overflow:hidden; margin:10px 0 6px; }
+    .tv-progbar-fill { height:100%; border-radius:5px; transition:width 1s; }
+    .tv-meta { font-size:.78rem; color:#a8b8cc; }
+
+    /* Tabla comparativo grande */
+    .tv-table { width:100%; border-collapse:collapse; font-size:1rem; }
+    .tv-table th {
+      background:#003087; color:#fff;
+      padding:10px 14px; text-align:center; font-size:.85rem;
+      text-transform:uppercase; letter-spacing:.05em;
+    }
+    .tv-table td {
+      padding:9px 14px; text-align:center;
+      border-bottom:1px solid #f1f5f9; color:#566a7f;
+      font-weight:600; font-size:.95rem;
+    }
+    .tv-table tr:nth-child(even) td { background:#f8fafc; }
+    .tv-table .tv-tlabel { text-align:left; color:#1E3A5F; font-weight:700; background:#f0f4ff!important; }
+    .tv-table .tv-thoy   { color:#696cff; font-size:1.05rem; font-weight:800; background:#eff6ff!important; }
+
+    /* Slide de PDF */
+    #tvPdfFrame {
+      width:100%; flex:1;
+      border:none; border-radius:8px;
+      box-shadow:0 2px 8px rgba(67,89,113,.1);
+      background:#fff;
+    }
+
+    /* Zona invisible para detectar el mouse */
+    /* Zona invisible para detectar el mouse */
+#mouseZone {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 60px;
+    height: 100vh;
+    z-index: 9998;
+}
+
+/* Botón oculto */
+#sidebarToggle {
+    position: fixed;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 9999;
+
+    opacity: 0;
+    visibility: hidden;
+
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+/* Mostrar botón cuando el mouse está cerca */
+#mouseZone:hover ~ #sidebarToggle,
+#sidebarToggle:hover {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* ── Imagen banner (Tony) — centrada, grande y sin recortes ── */
+.container-xxl.flex-grow-1 .col-sm-5 .banner-img-wrap,
+.col-sm-5 .banner-img-wrap {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 0 !important;
+  min-height: 0;
+  overflow: visible;
+}
+.container-xxl.flex-grow-1 .col-sm-5.text-center #bannerImg,
+.col-sm-5.text-center #bannerImg,
+#bannerImg {
+  height: auto !important;
+  width: 100% !important;
+  max-width: 340px !important;
+  max-height: 34vh !important;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto !important;
+  mix-blend-mode: multiply;
+}
+/* Asegura que la fila del banner tenga altura para la imagen */
+.container-xxl.flex-grow-1 .row:first-of-type .col-lg-8 > .card,
+.container-xxl.flex-grow-1 .row:first-of-type .col-lg-8 > .card > .d-flex.row {
+  height: 100%;
+  min-height: 0;
+}
+
+  </style>
+</head>
+<body>
+<!-- Botón para mostrar/ocultar sidebar -->
+<button id="sidebarToggle" onclick="toggleSidebar()" title="Mostrar/ocultar menú">
+  <i class="bx bx-menu" id="toggleIcon"></i>
+</button>
+
+<div id="mouseZone"></div>
+
+<button id="sidebarToggle" onclick="toggleSidebar()" title="Mostrar/ocultar menú">
+    <i class="bx bx-menu" id="toggleIcon"></i>
+</button>
+
+<div class="layout-wrapper layout-content-navbar">
+    <div class="layout-container">
+
+<!-- ══ SIDEBAR ══ -->
+<aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
+  <div class="app-brand demo">
+    <a href="#" class="app-brand-link">
+      <span class="app-brand-logo demo">
+        <img src="../assets/img/clc.png" alt="Grupo CLC" style="height:28px;width:auto;"
+             onerror="this.style.display='none';"/>
+      </span>
+      <span class="app-brand-text demo menu-text fw-bolder ms-2">Kellogg's</span>
+    </a>
+    <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto d-block d-xl-none">
+      <i class="bx bx-chevron-left bx-sm align-middle"></i>
+    </a>
+  </div>
+  <div class="menu-inner-shadow"></div>
+  <ul class="menu-inner py-1">
+    <li class="menu-item active">
+      <a href="#" class="menu-link"><i class="menu-icon tf-icons bx bx-home-circle"></i><div>Dashboard</div></a>
+    </li>
+    <li class="menu-header small text-uppercase"><span class="menu-header-text">Producción</span></li>
+    <li class="menu-item">
+      <a href="javascript:void(0);" class="menu-link menu-toggle"><i class="menu-icon tf-icons bx bx-bar-chart-alt-2"></i><div>Indicadores</div></a>
+      <ul class="menu-sub">
+        <li class="menu-item"><a href="javascript:void(0);" class="menu-link"><div>Día Actual</div></a></li>
+        <li class="menu-item"><a href="javascript:void(0);" class="menu-link"><div>Comparativo</div></a></li>
+        <li class="menu-item"><a href="javascript:void(0);" class="menu-link"><div>Histórico</div></a></li>
+      </ul>
+    </li>
+    <li class="menu-item">
+      <a href="javascript:void(0);" class="menu-link menu-toggle"><i class="menu-icon tf-icons bx bx-package"></i><div>Inventario SAP</div></a>
+      <ul class="menu-sub">
+        <li class="menu-item"><a href="javascript:void(0);" class="menu-link"><div>ME21N</div></a></li>
+        <li class="menu-item"><a href="javascript:void(0);" class="menu-link"><div>MIGO</div></a></li>
+        <li class="menu-item"><a href="javascript:void(0);" class="menu-link"><div>Reconciliación</div></a></li>
+      </ul>
+    </li>
+    <li class="menu-item">
+      <a href="javascript:void(0);" class="menu-link menu-toggle"><i class="menu-icon tf-icons bx bx-truck"></i><div>Despachos</div></a>
+      <ul class="menu-sub">
+        <li class="menu-item"><a href="javascript:void(0);" class="menu-link"><div>VL10B</div></a></li>
+        <li class="menu-item"><a href="javascript:void(0);" class="menu-link"><div>VL02N</div></a></li>
+        <li class="menu-item"><a href="javascript:void(0);" class="menu-link"><div>T. MEDINA</div></a></li>
+      </ul>
+    </li>
+    <li class="menu-header small text-uppercase"><span class="menu-header-text">Archivos</span></li>
+    <li class="menu-item" id="sideExcel">
+      <a href="javascript:void(0);" class="menu-link" onclick="document.getElementById('modal').style.display='flex'">
+        <i class="menu-icon tf-icons bx bx-table" style="color:#71dd37;"></i><div>Cargar Excel</div>
+      </a>
+    </li>
+    <li class="menu-item" id="sidePDF">
+      <a href="javascript:void(0);" class="menu-link" onclick="document.getElementById('fiPDF2').click()">
+        <i class="menu-icon tf-icons bx bx-file-pdf" style="color:#ff3e1d;"></i><div>Cargar PDF</div>
+      </a>
+    </li>
+    <li class="menu-item" id="sidePPTX">
+      <a href="javascript:void(0);" class="menu-link" onclick="abrirModalPPTX()">
+        <i class="menu-icon tf-icons bx bx-slideshow" style="color:#696cff;"></i><div>Cargar PPT</div>
+      </a>
+    </li>
+    <li class="menu-item">
+      <a href="javascript:void(0);" class="menu-link" onclick="toggleSideFiles()" id="btnToggleFiles">
+        <i class="menu-icon tf-icons bx bx-hide"></i><div id="lblToggleFiles">Ocultar archivos</div>
+      </a>
+    </li>
+    <li class="menu-header small text-uppercase"><span class="menu-header-text">Presentar</span></li>
+    <li class="menu-item">
+      <a href="javascript:void(0);" class="menu-link" onclick="iniciarTV()">
+        <i class="menu-icon tf-icons bx bx-tv" style="color:#f59e0b;"></i><div>Modo TV</div>
+      </a>
+    </li>
+    <li class="menu-header small text-uppercase"><span class="menu-header-text">Sistema</span></li>
+    <li class="menu-item">
+      <a href="javascript:void(0);" class="menu-link"><i class="menu-icon tf-icons bx bx-support"></i><div>Soporte</div></a>
+    </li>
+  </ul>
+</aside>
+
+<!-- ══ LAYOUT PAGE ══ -->
+<div class="layout-page">
+  <nav class="layout-navbar container-xxl navbar navbar-expand-xl navbar-detached align-items-center bg-navbar-theme" id="layout-navbar">
+    <div class="layout-menu-toggle navbar-nav align-items-xl-center me-3 me-xl-0 d-xl-none">
+      <a class="nav-item nav-link px-0 me-xl-4" href="javascript:void(0)"><i class="bx bx-menu bx-sm"></i></a>
+    </div>
+    <div class="navbar-nav-right d-flex align-items-center" id="navbar-collapse">
+      <div class="navbar-nav align-items-center">
+        <div class="nav-item d-flex align-items-center">
+          <i class="bx bx-search fs-4 lh-0"></i>
+
+          <input type="text" class="form-control border-0 shadow-none" placeholder="Buscar..." aria-label="Buscar..."/>
+        
+        </div>
+      </div>
+      <ul class="navbar-nav flex-row align-items-center ms-auto">
+        <li class="nav-item lh-1 me-3">
+          <div class="reloj-wrap"><span class="pulse"></span>HORA / ACT.: <strong id="reloj" class="ms-1">--:--:--</strong></div>
+        </li>
+        <li class="nav-item navbar-dropdown dropdown-user dropdown">
+          <a class="nav-link dropdown-toggle hide-arrow" href="javascript:void(0);" data-bs-toggle="dropdown">
+            <div class="avatar avatar-online"><img src="../assets/img/avatars/1.png" alt class="w-px-40 h-auto rounded-circle"/></div>
+          </a>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item" href="#"><div class="d-flex"><div class="flex-shrink-0 me-3"><div class="avatar avatar-online"><img src="../assets/img/avatars/1.png" alt class="w-px-40 h-auto rounded-circle"/></div></div><div class="flex-grow-1"><span class="fw-semibold d-block">Controlador Maquila</span><small class="text-muted">Grupo CLC</small></div></div></a></li>
+            <li><div class="dropdown-divider"></div></li>
+            <li><a class="dropdown-item" href="#"><i class="bx bx-user me-2"></i><span class="align-middle">Mi perfil</span></a></li>
+            <li><a class="dropdown-item" href="#"><i class="bx bx-cog me-2"></i><span class="align-middle">Configuración</span></a></li>
+            <li><div class="dropdown-divider"></div></li>
+            <li><a class="dropdown-item" href="#"><i class="bx bx-power-off me-2"></i><span class="align-middle">Cerrar sesión</span></a></li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="content-wrapper">
+  <div class="container-xxl flex-grow-1 container-p-y">
+
+    <!-- ══ FILA 1: Banner + Objetivo + Producción ══ -->
+    <div class="row">
+      <div class="col-lg-8 mb-4 order-0">
+        <div class="card">
+          <div class="d-flex align-items-center row">
+            <div class="col-sm-7">
+              <div class="card-body">
+                <img src="../assets/img/clc.png" alt="Grupo CLC" class="mb-2"
+                     style="height:34px;width:auto;" onerror="this.style.display='none';"/>
+                <h5 class="card-title text-primary">Panel de Producción — Maquila Kellogg's 🏭</h5>
+                <p class="mb-1" id="bannerFecha" style="font-size:.82rem;color:#566a7f;">Carga tu Excel para ver los indicadores del día</p>
+                <p class="mb-3" id="bannerAlerta" style="font-size:.82rem;"></p>
+                <button class="btn btn-sm btn-primary" onclick="iniciarTV()" style="background:linear-gradient(135deg,#696cff,#5f61e6);border:none;font-weight:700;">
+                  <i class="bx bx-tv me-1"></i> Presentar en TV
+                </button>
+                <span id="archivoNombre" class="ms-2 text-muted" style="font-size:.75rem;"></span>
+                <input type="file" id="fiPDF2" accept=".pdf" style="display:none" onchange="tvLoadPDF(this.files[0])"/>
+              </div>
+            </div>
+            <div class="col-sm-5 text-center">
+              <div class="card-body banner-img-wrap">
+                <img src="../assets/img/kell.png" id="bannerImg" alt="Kellogg's"
+                  onerror="this.style.display='none';"/>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Objetivo + Producción -->
+      <div class="col-lg-4 col-md-4 order-1">
+        <div class="row">
+          <div class="col-lg-6 col-md-12 col-6 mb-4">
+            <div class="card">
+              <div class="card-body">
+                <div class="card-title d-flex align-items-start justify-content-between">
+                  <div class="avatar flex-shrink-0"><img src="../assets/img/icons/unicons/chart-success.png" alt="" class="rounded"/></div>
+                  <div class="dropdown"><button class="btn p-0" data-bs-toggle="dropdown"><i class="bx bx-dots-vertical-rounded"></i></button></div>
+                </div>
+                <span class="fw-semibold d-block mb-1">Objetivo</span>
+                <h3 class="card-title mb-2" id="kObj">—</h3>
+                <small class="text-muted">Unidades del día</small>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-6 col-md-12 col-6 mb-4">
+            <div class="card">
+              <div class="card-body">
+                <div class="card-title d-flex align-items-start justify-content-between">
+                  <div class="avatar flex-shrink-0"><img src="../assets/img/icons/unicons/wallet-info.png" alt="" class="rounded"/></div>
+                  <div class="dropdown"><button class="btn p-0" data-bs-toggle="dropdown"><i class="bx bx-dots-vertical-rounded"></i></button></div>
+                </div>
+                <span class="fw-semibold d-block mb-1">Producción</span>
+                <h3 class="card-title mb-1" id="kProd">—</h3>
+                <small id="kTend" class="text-muted">Producido hoy</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ FILA 2: KPIs centrales ══ -->
+    <div class="row">
+      <div class="col-12 col-lg-8 order-2 order-md-3 order-lg-2 mb-4">
+        <div class="card">
+          <div class="row row-bordered g-0">
+            <div class="col-md-12">
+              <h5 class="card-header m-0 me-2 pb-3">Cumplimiento y Proyección</h5>
+              <div class="card-body pt-0">
+                <div class="row g-3 mb-3">
+                  <div class="col-6">
+                    <small class="text-muted">Cumplimiento</small>
+                    <h4 class="mb-0" id="kCumpl" style="color:#71dd37;">—</h4>
+                  </div>
+                  <div class="col-6">
+                    <small class="text-muted">Proyección</small>
+                    <h4 class="mb-0 text-warning" id="kProy">—</h4>
+                  </div>
+                  <div class="col-6">
+                    <small class="text-muted">Avance del día</small>
+                    <h4 class="mb-0 text-primary" id="kAvan">—</h4>
+                  </div>
+                  <div class="col-6">
+                    <small class="text-muted">Faltante</small>
+                    <h4 class="mb-0 text-danger" id="kFalt">—</h4>
+                  </div>
+                </div>
+                <div class="d-flex justify-content-between mb-1">
+                  <small class="text-muted">Avance de producción</small>
+                  <small class="fw-bold" id="pctTxt">0%</small>
+                </div>
+                <div class="progress" style="height:8px;">
+                  <div class="progress-bar bg-primary" id="progBar" role="progressbar" style="width:0%;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cambios maquila + Personal + Alertas -->
+      <div class="col-12 col-md-8 col-lg-4 order-3 order-md-2">
+        <div class="row">
+          <!-- Alertas -->
+          <div class="col-12 mb-4">
+            <div class="card">
+              <div class="card-body">
+                <div class="d-flex justify-content-between flex-sm-row flex-column gap-3">
+                  <div class="d-flex flex-sm-column flex-row align-items-start justify-content-between">
+                    <div class="card-title">
+                      <h5 class="text-nowrap mb-2">Alertas</h5>
+                      <span class="badge bg-label-warning rounded-pill" id="alertaBadge">—</span>
+                    </div>
+                    <div class="mt-sm-auto">
+                      <small class="fw-semibold text-nowrap" id="alertaIcono"></small>
+                      <h3 class="mb-0" id="alertaTexto" style="font-size:1rem;line-height:1.3;">—</h3>
+                    </div>
+                  </div>
+                  <div id="profileReportChart"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  </div>
+
+  <footer class="content-footer footer bg-footer-theme">
+    <div class="container-xxl d-flex flex-wrap justify-content-between py-2 flex-md-row flex-column">
+      <div class="mb-2 mb-md-0 d-flex align-items-center gap-2">
+        <img src="../assets/img/clc.png" alt="Grupo CLC" style="height:16px;width:auto;" onerror="this.style.display='none';"/>
+        © <script>document.write(new Date().getFullYear())</script>, <a href="#" class="footer-link fw-bolder">Grupo CLC · Maquila Kellogg's</a>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <a href="#" class="footer-link me-4">Indicadores</a>
+        <a href="#" class="footer-link me-4">Histórico</a>
+        <a href="#" class="footer-link me-4">Soporte</a>
+        <button onclick="toggleFullscreen()" id="btnFS" title="Pantalla completa (F11)"
+          style="background:#696cff;border:none;color:#fff;border-radius:5px;
+                 width:26px;height:22px;cursor:pointer;display:flex;align-items:center;
+                 justify-content:center;padding:0;transition:background .15s;flex-shrink:0;">
+          <i class="bx bx-fullscreen" id="icoFS" style="font-size:.95rem;line-height:1;"></i>
+        </button>
+      </div>
+    </div>
+  </footer>
+  <div class="content-backdrop fade"></div>
+</div>
+</div>
+<div class="layout-overlay layout-menu-toggle"></div>
+</div>
+
+<!-- ══ MODAL ══ -->
+<div id="modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;align-items:center;justify-content:center;">
+  <div class="card" style="width:400px;border-radius:12px;">
+    <div class="card-header d-flex align-items-center justify-content-between">
+      <h5 class="mb-0 d-flex align-items-center">
+        <img src="../assets/img/clc.png" alt="Grupo CLC" style="height:20px;width:auto;" class="me-2" onerror="this.style.display='none';"/>
+        <i class="bx bx-spreadsheet me-2 text-success"></i>Cargar Excel del día
+      </h5>
+      <button class="btn p-0" onclick="document.getElementById('modal').style.display='none'"><i class="bx bx-x fs-4"></i></button>
+    </div>
+    <div class="card-body">
+      <p class="text-muted mb-3" style="font-size:.82rem;">Selecciona <strong>objetivos.xlsx</strong>. El dashboard leerá la hoja <strong>SEMANA</strong> y <strong>PRODUCCION_MENSUAL</strong>.</p>
+      <div id="dz" onclick="document.getElementById('fi').click()"
+        style="border:2px dashed #d9dee3;border-radius:8px;padding:2rem;text-align:center;cursor:pointer;">
+        <i class="bx bx-cloud-upload bx-lg text-muted d-block mb-2"></i>
+        <p class="mb-0"><strong class="text-primary">Clic aquí</strong> o arrastra el archivo</p>
+        <small class="text-muted">objetivos.xlsx</small>
+      </div>
+      <input type="file" id="fi" accept=".xlsx,.xls" style="display:none" onchange="leerExcel(this)"/>
+      <div id="fiMsg" style="display:none;margin-top:10px;font-size:.78rem;font-weight:600;"></div>
+    </div>
+    <div class="card-footer d-flex justify-content-end">
+      <button class="btn btn-outline-secondary" onclick="document.getElementById('modal').style.display='none'">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TV OVERLAY ══ -->
+<div id="tvOverlay">
+  <div id="tvHeader">
+    <!-- LOGO CLC GRANDE A LA IZQUIERDA -->
+    <div class="tv-clc-logo">
+      <img src="../assets/img/clc.png" alt="Grupo CLC"
+           onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
+           style="height:38px;width:auto;border-radius:5px;"/>
+      <!-- Fallback SVG si no carga la imagen -->
+      <div style="display:none;width:38px;height:38px;border-radius:8px;background:linear-gradient(135deg,#003087,#1565C0);align-items:center;justify-content:center;">
+        <span style="color:#fff;font-size:.75rem;font-weight:900;letter-spacing:-.5px;">CLC</span>
+      </div>
+      <div class="tv-clc-text">
+        <span class="clc-main">Grupo CLC</span>
+        <span class="clc-sub">Maquila Kellogg's</span>
+      </div>
+    </div>
+
+    <!-- TÍTULO CENTRAL -->
+    <div style="flex:1;text-align:center;padding:0 20px;">
+      <div style="font-size:.65rem;text-transform:uppercase;letter-spacing:.12em;color:#a8b8cc;font-weight:600;margin-bottom:2px;">Panel de Producción · Kellogg's</div>
+      <div id="tvTituloSlide" style="font-size:1rem;font-weight:800;color:#566a7f;letter-spacing:.02em;">KPIs del Día</div>
+    </div>
+
+    <!-- RELOJ -->
+    <div class="tv-reloj">
+      <span class="tv-pulse"></span>
+      <span id="tvReloj">--:--:--</span>
+    </div>
+  </div>
+
+  <div id="tvContent"><!-- láminas se inyectan aquí --></div>
+
+  <!-- Barra controles oculta — aparece al pasar el mouse -->
+  <div id="tvBar">
+    <button class="tv-exit" onclick="cerrarTV()">✕ Salir</button>
+    <div class="tv-sep"></div>
+    <button onclick="tvPrev()">&#9664;</button>
+    <span id="tvBarNum">1/5</span>
+    <button onclick="tvNext()">&#9654;</button>
+    <div class="tv-sep"></div>
+    <span id="tvBarName" class="tv-slide-name" style="flex:0 0 auto;max-width:160px;">—</span>
+    <div id="tvDots"></div>
+    <div style="flex:1;"></div>
+    <div id="tvBarTimer"><div id="tvBarFill" style="width:100%"></div></div>
+    <span id="tvBarLabel">40s</span>
+    <div class="tv-sep"></div>
+    <button id="tvBtnPause" class="tv-pause" onclick="tvTogglePause()">&#9646;&#9646; Pausa</button>
+    <div class="tv-sep"></div>
+    <label style="font-size:.72rem;color:#a8b8cc;white-space:nowrap;">seg:</label>
+    <input id="tvSecsIn" type="number" min="5" max="300" value="40" onchange="tvSetSecs(this.value)"/>
+  </div>
+</div>
+
+<!-- ══ PRESENTADOR FULLSCREEN ══ -->
+<div id="presentadorOverlay">
+  <div id="slideCanvas">
+    <div class="slide-placeholder">
+      <h1>🖥️</h1>
+      <p>Carga un PowerPoint para comenzar</p>
+    </div>
+  </div>
+  <div id="presControls">
+    <button class="neutral" onclick="cerrarPresentador()" title="Salir (Esc)">✕ Salir</button>
+    <div class="pres-sep"></div>
+    <button onclick="irAnterior()">◀ Anterior</button>
+    <span id="slideCounter">0 / 0</span>
+    <button onclick="irSiguiente()">Siguiente ▶</button>
+    <div class="pres-sep"></div>
+    <div id="timerBar"><div id="timerFill" style="width:100%"></div></div>
+    <span id="timerLabel">40s</span>
+    <div class="pres-sep"></div>
+    <button id="btnPlayPause" onclick="togglePlayPause()">⏸ Pausar</button>
+    <div class="pres-sep"></div>
+    <label style="color:#aaa;font-size:.78rem;white-space:nowrap;">⏱ seg/lámina:</label>
+    <input id="inputSecs" type="number" min="5" max="300" value="40" onchange="cambiarSecs(this.value)"/>
+  </div>
+</div>
+
+<!-- ══ MODAL PPTX ══ -->
+<div id="modalPPTX">
+  <div class="mpCard">
+    <div class="mpHead">
+      <img src="../assets/img/clc.png" alt="Grupo CLC" style="height:20px;width:auto;background:#fff;border-radius:3px;padding:1px 3px;" onerror="this.style.display='none';"/>
+      <i class="bx bx-slideshow" style="font-size:1.3rem;"></i>
+      <h5 class="ms-2">Subir PowerPoint para presentar</h5>
+      <button style="background:none;border:none;color:#fff;cursor:pointer;margin-left:auto;font-size:1.2rem;" onclick="cerrarModalPPTX()">✕</button>
+    </div>
+    <div class="mpBody">
+      <p style="font-size:.82rem;color:#566a7f;margin-bottom:1rem;">
+        Sube un archivo <strong>.pptx</strong>. Las diapositivas se mostrarán en pantalla completa, una por una, con temporizador automático.
+      </p>
+      <div id="dzPptx" onclick="document.getElementById('fiPptx').click()">
+        <i class="bx bx-slideshow"></i>
+        <p style="margin:0;font-weight:600;">Clic aquí o arrastra el <strong>.pptx</strong></p>
+        <small style="color:#94a3b8;">Formato PowerPoint (.pptx)</small>
+      </div>
+      <input type="file" id="fiPptx" accept=".pptx" style="display:none" onchange="cargarPPTX(this)"/>
+      <div id="pptxMsg"></div>
+    </div>
+    <div class="mpFoot">
+      <button class="btn btn-outline-secondary btn-sm" onclick="cerrarModalPPTX()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/vendor/libs/jquery/jquery.js"></script>
+<script src="../assets/vendor/libs/popper/popper.js"></script>
+<script src="../assets/vendor/js/bootstrap.js"></script>
+<script src="../assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.js"></script>
+<script src="../assets/vendor/js/menu.js"></script>
+<script src="../assets/vendor/libs/apex-charts/apexcharts.js"></script>
+<script src="../assets/js/main.js"></script>
+<script src="../assets/js/dashboards-analytics.js"></script>
+
+<script>
+/* ══════════════════════════════════════════════════════
+   SISTEMA KPI KELLOGG'S — Leer, pintar, calcular
+   ══════════════════════════════════════════════════════ */
+
+/* Datos globales de la semana */
+var KPI = {
+  semana:'—', periodo:'—',
+  meta_global: 0.85,
+  prod_meta:0, prod_real:0,
+  nota_orden:0, nota_bpm:0, nota_calidad:0, nota_seg:0,
+  acum_real:0, acum_meta:0, acum_pct:0,
+  fecha_inicio: null,
+  nota_alerta:'',
+};
+var PROD_MENSUAL = []; // [{mes, meta, real, pct}]
+var HIST = [];         // histórico semanal (hoja SEMANA de semanas pasadas)
+
+/* ── Helpers formato ─ */
+function n(v){ return (v!==null&&v!==undefined&&v!=='')? Number(v).toLocaleString('es-GT'):'—'; }
+function p(v){ return (v!==null&&v!==undefined&&v!=='')? (Number(v)*100).toFixed(1)+'%':'—'; }
+function set(id,html){ var e=document.getElementById(id); if(e) e.innerHTML=html; }
+
+/* ── Estado según nota (0-100) y meta ─ */
+function estadoNota(nota, meta_pct){
+  meta_pct = meta_pct || 0.85;
+  var lim  = meta_pct * 100;      // ej: 85
+  if(nota >= lim)       return {cls:'verde',  txt:'VERDE',    color:'#1B8A4C', bg:'#DCFCE7'};
+  if(nota >= lim*0.82)  return {cls:'amarillo',txt:'AMARILLO', color:'#B45309', bg:'#FEF3C7'};
+  return                       {cls:'rojo',   txt:'ROJO',     color:'#C0392B', bg:'#FEE2E2'};
+}
+
+/* ── Días sin accidentes ─ */
+function diasSinAccidente(fechaInicio){
+  if(!fechaInicio) return '—';
+  var d0 = (fechaInicio instanceof Date) ? fechaInicio : new Date(fechaInicio);
+  var hoy = new Date(); hoy.setHours(0,0,0,0);
+  var diff = Math.floor((hoy - d0) / 86400000);
+  return diff >= 0 ? diff : 0;
+}
+
+/* ── Leer Excel KPI_Kelloggs.xlsx ─ */
+function leerExcelKPI(file){
+  var msg = document.getElementById('fiMsg');
+  if(msg){ msg.style.display='block'; msg.className='text-primary'; msg.innerHTML='<i class="bx bx-loader-alt bx-spin me-1"></i>Leyendo...'; }
+  var r = new FileReader();
+  r.onload = function(e){
+    try{
+      var wb = XLSX.read(e.target.result, {type:'array', cellDates:true});
+      procesarExcelKPI(wb, file.name);
+      if(msg){ msg.className='text-success'; msg.innerHTML='<i class="bx bx-check-circle me-1"></i>'+file.name+' cargado correctamente'; }
+      setTimeout(function(){ document.getElementById('modal').style.display='none'; iniciarTV(); }, 700);
+    } catch(err){
+      if(msg){ msg.className='text-danger'; msg.innerHTML='<i class="bx bx-error-circle me-1"></i>Error: '+err.message; }
+    }
+  };
+  r.readAsArrayBuffer(file);
+}
+
+function procesarExcelKPI(wb, nombre){
+  /* Lee hoja SEMANA (col B, filas 4-25) — estructura del KPI_Kelloggs.xlsx */
+  var ws = wb.Sheets['SEMANA'];
+  if(!ws) throw new Error('No se encontró la hoja "SEMANA"');
+
+  function v(row){ var c = ws['B'+row]; return (c && c.v !== null && c.v !== '') ? c.v : null; }
+
+  KPI.semana       = v(4)  !== null ? String(v(4))   : '—';
+  KPI.periodo      = v(5)  !== null ? String(v(5))   : '—';
+  KPI.meta_global  = v(6)  !== null ? Number(v(6))   : 0.85;
+  KPI.prod_meta    = v(8)  !== null ? Number(v(8))   : 0;
+  KPI.prod_real    = v(9)  !== null ? Number(v(9))   : 0;
+  KPI.nota_orden   = v(11) !== null ? Number(v(11))  : 0;
+  KPI.nota_bpm     = v(13) !== null ? Number(v(13))  : 0;
+  KPI.nota_calidad = v(15) !== null ? Number(v(15))  : 0;
+  KPI.nota_seg     = v(17) !== null ? Number(v(17))  : 0;
+  KPI.acum_real    = v(19) !== null ? Number(v(19))  : 0;
+  KPI.acum_meta    = v(20) !== null ? Number(v(20))  : 0;
+  KPI.acum_pct     = v(21) !== null ? Number(v(21))  : (KPI.acum_meta ? KPI.acum_real/KPI.acum_meta : 0);
+  KPI.fecha_inicio = v(23);
+  KPI.nota_alerta  = v(25) !== null ? String(v(25))  : '';
+
+  /* Cumplimiento global = promedio de los 5 KPIs */
+  var prodPct = KPI.prod_meta ? KPI.prod_real / KPI.prod_meta : 0;
+  KPI.cumpl_global = (
+    prodPct +
+    KPI.nota_orden   / 100 +
+    KPI.nota_bpm     / 100 +
+    KPI.nota_calidad / 100 +
+    KPI.nota_seg     / 100
+  ) / 5;
+
+  /* ── Hoja PRODUCCION_MENSUAL ── */
+  var ws2 = wb.Sheets['PRODUCCION_MENSUAL'];
+  PROD_MENSUAL = [];
+  var mesesNom = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+  if(ws2){
+    for(var i=0; i<12; i++){
+      var row = 4 + i;
+      var cm  = ws2['A'+row];
+      var cb  = ws2['B'+row];
+      var cc  = ws2['C'+row];
+      var real = (cc && cc.v !== null && cc.v !== '') ? Number(cc.v) : null;
+      var meta = (cb && cb.v !== null && cb.v !== '') ? Number(cb.v) : 450000;
+      var ce   = ws2['E'+row];
+      var estado = (ce && ce.v !== null && String(ce.v).trim() !== '') ? String(ce.v).trim() : '';
+      PROD_MENSUAL.push({
+        mes:  cm ? cm.v : mesesNom[i],
+        meta: meta,
+        real: real,
+        pct:  (real !== null && meta) ? real / meta : null,
+        estado: estado,
+      });
+    }
+  } else {
+    /* Si no hay hoja mensual, crear 12 meses vacíos */
+    mesesNom.forEach(function(m){ PROD_MENSUAL.push({mes:m, meta:450000, real:null, pct:null, estado:''}); });
+  }
+
+  pintarDashboardKPI();
+  if(nombre) document.getElementById('archivoNombre').textContent = nombre;
+}
+
+/* ── Pintar dashboard principal con los KPIs ─ */
+function pintarDashboardKPI(){
+  /* Banner */
+  set('bannerFecha', 'Semana: '+KPI.semana+'   |   Período: '+KPI.periodo);
+  var al = KPI.nota_alerta;
+  document.getElementById('bannerAlerta').innerHTML = (al && al.trim())
+    ? '<span class="text-warning fw-semibold"><i class="bx bx-error-circle me-1"></i>'+al+'</span>'
+    : '<span class="text-success fw-semibold"><i class="bx bx-check-circle me-1"></i>Sin alertas activas</span>';
+
+  /* KPIs principales (mapear a los campos del dashboard existente) */
+  var cumpl_pct = KPI.prod_meta ? KPI.prod_real / KPI.prod_meta : 0;
+  set('kObj',    n(KPI.prod_meta));   set('kObjS',  n(KPI.prod_meta));
+  set('kProd',   n(KPI.prod_real));   set('kProdS', n(KPI.prod_real));
+  set('kCumpl',  (cumpl_pct*100).toFixed(1)+'%');
+  set('kProy',   (KPI.cumpl_global*100).toFixed(1)+'%');
+  set('kAvan',   (KPI.nota_orden)+'%');
+  set('kFalt',   n(Math.max(0, KPI.prod_meta - KPI.prod_real)));
+  set('kRitAct', (KPI.nota_bpm)+'%');
+  set('kRitNec', (KPI.nota_calidad)+'%');
+  set('kHrs',    (KPI.nota_seg)+'%');
+  set('kCambios', (KPI.cumpl_global*100).toFixed(1)+'%');
+  set('kPers',   diasSinAccidente(KPI.fecha_inicio));
+  set('cumplLabel', (KPI.cumpl_global*100).toFixed(1)+'% Cumplimiento Global');
+
+  var pct = Math.min(100, KPI.cumpl_global*100);
+  var pg = document.getElementById('progBar');
+  if(pg) pg.style.width = pct+'%';
+  set('pctTxt', pct.toFixed(1)+'%');
+
+  var kel = document.getElementById('kCumpl');
+  if(kel) kel.style.color = pct>=85?'#71dd37':pct>=70?'#fd7e14':'#ff3e1d';
+
+  /* Alertas */
+  var ok = !al || !al.trim();
+  set('alertaBadge', ok?'Todo en orden':'Atención requerida');
+  var badge = document.getElementById('alertaBadge');
+  if(badge) badge.className='badge rounded-pill '+(ok?'bg-label-success':'bg-label-warning');
+  set('alertaIcono', ok?'<i class="bx bx-check text-success"></i> Sin alertas':'<i class="bx bx-error text-warning"></i> Alerta activa');
+  set('alertaTexto', al||'—');
+  set('promHist', (KPI.acum_pct*100).toFixed(1)+'%');
+  set('totalHist', n(KPI.acum_real)+' uds acumuladas');
+  set('diasCarg', PROD_MENSUAL.filter(function(m){return m.real!==null;}).length+' meses');
+}
+
+/* ── Auto-carga: busca objetivos.xlsx primero, luego KPI_Kelloggs.xlsx ─ */
+(function autoCargarKPI(){
+  var candidatos = [
+    '../data/objetivos.xlsx',
+    '../data/KPI_Kelloggs.xlsx',
+  ];
+  function intentar(i){
+    if(i >= candidatos.length) return;
+    fetch(candidatos[i])
+      .then(function(r){ if(!r.ok) throw new Error('No encontrado'); return r.arrayBuffer(); })
+      .then(function(buf){
+        var wb = XLSX.read(buf, {type:'array', cellDates:true});
+        procesarExcelKPI(wb, candidatos[i].split('/').pop()+' (auto)');
+      })
+      .catch(function(){ intentar(i+1); });
+  }
+  intentar(0);
+
+  fetch('../data/laminas.pdf')
+    .then(function(r){ if(!r.ok) throw new Error('No encontrado'); return r.arrayBuffer(); })
+    .then(function(buf){ if(window.pdfjsLib) cargarPDFBuffer(buf); else setTimeout(function(){ cargarPDFBuffer(buf); },1500); })
+    .catch(function(e){ console.warn('PDF no disponible:', e.message); });
+})();
+
+function leerExcel(inp){ if(inp.files[0]) leerExcelKPI(inp.files[0]); }
+
+function cargarPDFBuffer(buf){
+  pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  pdfjsLib.getDocument({data:buf}).promise.then(function(pdfDoc){
+    var total=pdfDoc.numPages; TV.pdfPages=[];
+    function renderPage(num){
+      pdfDoc.getPage(num).then(function(page){
+        var vp=page.getViewport({scale:2.0}); var can=document.createElement('canvas');
+        can.width=vp.width; can.height=vp.height;
+        page.render({canvasContext:can.getContext('2d'),viewport:vp}).promise.then(function(){
+          TV.pdfPages.push(can.toDataURL('image/png'));
+          if(num<total) renderPage(num+1);
+        });
+      });
+    }
+    renderPage(1);
+  }).catch(function(e){ console.warn('Error PDF:',e.message); });
+}
+
+function toggleSideFiles(){}
+function toggleFullscreen(){
+  if(!document.fullscreenElement){ document.documentElement.requestFullscreen().catch(function(){}); document.getElementById('icoFS').className='bx bx-exit-fullscreen'; }
+  else { document.exitFullscreen(); document.getElementById('icoFS').className='bx bx-fullscreen'; }
+}
+document.addEventListener('fullscreenchange',function(){ var ico=document.getElementById('icoFS'); if(ico) ico.className=document.fullscreenElement?'bx bx-exit-fullscreen':'bx bx-fullscreen'; });
+function toggleSidebar(){ sidebarVisible=!sidebarVisible; document.body.classList.toggle('sidebar-hidden',!sidebarVisible); var icon=document.getElementById('toggleIcon'); if(icon) icon.className=sidebarVisible?'bx bx-menu':'bx bx-menu-alt-right'; }
+setInterval(function(){ document.getElementById('reloj').textContent=new Date().toLocaleTimeString('es-GT'); },1000);
+var dz=document.getElementById('dz');
+if(dz){
+  dz.addEventListener('dragover',function(e){ e.preventDefault(); dz.style.borderColor='#696cff'; });
+  dz.addEventListener('dragleave',function(){ dz.style.borderColor='#d9dee3'; });
+  dz.addEventListener('drop',function(e){ e.preventDefault(); dz.style.borderColor='#d9dee3'; if(e.dataTransfer.files[0]) leerExcelKPI(e.dataTransfer.files[0]); });
+}
+function exportCSV(){ alert('Sin datos históricos semanales para exportar.'); }
+function pintarKPIs(D){}
+function pintarComparativo(D){}
+function pintarHistorico(){}
+function pintarGraficas(){}
+function pintarCambios(){}
+</script>
+
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   PRESENTADOR TV — Dashboard Maquila Kellogg's
+   Fuentes: Excel (HIST/D), PDF subido, láminas propias
+   ═══════════════════════════════════════════════════════════ */
+
+var TV = {
+  secs:     40,
+  secsLeft: 40,
+  idx:      0,
+  paused:   false,
+  timer:    null,
+  relojT:   null,
+  slides:   [],   // [{titulo, fn}]  -- fn() devuelve HTML
+  pdfPages: [],   // [dataURL]  -- páginas del PDF como img
+};
+
+/* ─── helpers DOM ─── */
+function tvTxt(id){ var e=document.getElementById(id); return e?e.textContent.trim():'—'; }
+function tvHtml(id){ var e=document.getElementById(id); return e?e.innerHTML:''; }
+function tvNum(v){ return (v!==null&&v!==undefined&&v!=='') ? Number(v).toLocaleString('es-GT') : '—'; }
+function tvPct(v){ return (v!==null&&v!==undefined&&v!=='') ? (Number(v)*100).toFixed(1)+'%' : '—'; }
+
+/* ─── Helpers gráficas inline ─── */
+function tvGaugeSVG(pct, color){
+  // Semicírculo gauge
+  var c = color||'#696cff';
+  var r=36, cx=45, cy=42;
+  var circ = Math.PI*r; // semicírculo
+  var filled = circ * Math.min(pct/100,1);
+  var bg_d = 'M9,42 A36,36 0 0,1 81,42';
+  var fill_d = bg_d;
+  return '<svg viewBox="0 0 90 46" style="width:100%;max-width:120px;height:50px;display:block;margin:6px auto 0;">' +
+    '<path d="'+bg_d+'" fill="none" stroke="#e7e7ff" stroke-width="8" stroke-linecap="round"/>' +
+    '<path d="'+fill_d+'" fill="none" stroke="'+c+'" stroke-width="8" stroke-linecap="round"' +
+    ' stroke-dasharray="'+filled+' '+circ+'" />' +
+    '<text x="45" y="40" text-anchor="middle" font-size="12" font-weight="800" fill="'+c+'" font-family="Public Sans,sans-serif">'+pct.toFixed(0)+'%</text>' +
+    '</svg>';
+}
+
+function tvBarsSVG(vals, colors, maxV){
+  // Barras verticales mini
+  if(!vals||!vals.length) return '';
+  var max = maxV || Math.max.apply(null,vals.map(Math.abs))||1;
+  var h=44, w=Math.max(6, Math.floor(180/vals.length)-3);
+  var svgW = vals.length*(w+3);
+  var bars='';
+  vals.forEach(function(v,i){
+    var bh = Math.max(2,Math.round((Math.abs(v)/max)*h));
+    var col = colors ? colors[i]||'#696cff' : '#696cff';
+    var x = i*(w+3);
+    bars+='<rect x="'+x+'" y="'+(h-bh)+'" width="'+w+'" height="'+bh+'" fill="'+col+'" rx="2"/>';
+  });
+  return '<svg viewBox="0 0 '+svgW+' '+h+'" style="width:100%;height:44px;display:block;margin:6px auto 0;" preserveAspectRatio="none">'+bars+'</svg>';
+}
+
+function tvLineSVG(vals, color){
+  if(!vals||vals.length<2) return '';
+  var max=Math.max.apply(null,vals)||1, min=0;
+  var W=200,H=44,n=vals.length;
+  var pts=vals.map(function(v,i){ return (i/(n-1))*W+','+(H-Math.round(((v-min)/(max-min))*H)); }).join(' ');
+  return '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:44px;display:block;margin:6px auto 0;" preserveAspectRatio="none">'+
+    '<polyline points="'+pts+'" fill="none" stroke="'+(color||'#696cff')+'" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>'+
+    '</svg>';
+}
+
+/* ─── Catálogo de marcas Kellogg's distribuidas por lámina ─── */
+/* ─── Marcas como SVG inline — sin dependencia de archivos externos ─── */
+/* ─── Helpers CSS de estado ─── */
+function kColor(nota){ return nota>=85?'#1B8A4C':nota>=70?'#B45309':'#C0392B'; }
+function kBg(nota)   { return nota>=85?'#DCFCE7':nota>=70?'#FEF3C7':'#FEE2E2'; }
+function kEstado(nota){ return nota>=85?'● VERDE':nota>=70?'● AMARILLO':'● ROJO'; }
+function kEstadoColor(nota){ return kColor(nota); }
+
+/* ─── Watermarks desactivados ─── */
+function tvWatermark(i){ return ''; }
+function tvWatermarkCenter(i){ return ''; }
+function tvSetBrandHeader(i){ }
+function brandSVGuri(i){ return ''; }
+
+/* ─── KPI card grande para TV ─── */
+function tvKpiCard(icono, titulo, subtitulo, nota, meta100){
+  var pct  = Math.round(nota);
+  var col  = kColor(pct);
+  var barW = Math.min(100, pct);
+  var metaW= Math.min(100, meta100||85);
+  return '<div style="background:#fff;border-radius:18px;'+
+    'box-shadow:0 6px 32px rgba(0,0,0,.13);'+
+    'display:flex;flex-direction:column;align-items:center;justify-content:space-evenly;'+
+    'padding:40px 22px;gap:8px;position:relative;overflow:hidden;height:100%;">'+
+    /* Banda de color arriba */
+    '<div style="position:absolute;top:0;left:0;right:0;height:9px;background:'+col+'"></div>'+
+    /* Icono grande */
+    '<span style="font-size:5rem;line-height:1;">'+icono+'</span>'+
+    /* Título KPI */
+    '<div style="font-size:1.7rem;font-weight:900;text-transform:uppercase;letter-spacing:.1em;color:#374151;text-align:center;line-height:1.15;">'+titulo+'</div>'+
+    /* Subtítulo */
+    '<div style="font-size:1.25rem;font-weight:600;color:#6B7280;text-align:center;line-height:1.3;">'+subtitulo+'</div>'+
+    /* Número grande */
+    '<div style="font-size:7rem;font-weight:900;line-height:1;color:'+col+';letter-spacing:-3px;">'+pct+'<span style="font-size:3.6rem;">%</span></div>'+
+    /* Barra de progreso */
+    '<div style="width:92%;background:#F3F4F6;border-radius:999px;height:18px;position:relative;">'+
+      '<div style="position:absolute;left:0;top:0;height:100%;width:'+metaW+'%;background:#E5E7EB;border-radius:999px;"></div>'+
+      '<div style="position:absolute;left:0;top:0;height:100%;width:'+barW+'%;background:'+col+';border-radius:999px;transition:width 1.2s;"></div>'+
+      '<div style="position:absolute;left:'+metaW+'%;top:-6px;width:4px;height:30px;background:#374151;border-radius:2px;"></div>'+
+    '</div>'+
+    /* Estado */
+    '<div style="font-size:1.6rem;font-weight:800;color:'+col+';letter-spacing:.06em;">'+kEstado(pct)+'</div>'+
+  '</div>';
+}
+
+function tvBuildSlides(){
+  TV.slides = [];
+
+  /* ══════════════════════════════════════════════════════
+     LÁMINA 1: KPIs del Tablero — 5 tarjetas grandes
+  ══════════════════════════════════════════════════════ */
+  TV.slides.push({ titulo:'KPIs del Tablero', fn: function(){
+    var meta100     = Math.round((KPI.meta_global||0.85)*100);
+    var prodPct     = KPI.prod_meta ? Math.round(KPI.prod_real/KPI.prod_meta*100) : 0;
+    var cumplGlobal = Math.round((KPI.cumpl_global||0)*100);
+    var colG = kColor(cumplGlobal);
+
+    return '<div style="width:100%;height:100%;display:flex;flex-direction:column;gap:14px;">' +
+      /* Header de lámina */
+      '<div style="display:flex;align-items:center;justify-content:space-between;flex-shrink:0;padding:4px 8px;'+
+           'background:#fff;border-radius:14px;box-shadow:0 2px 10px rgba(0,0,0,.07);">'+
+        '<div>'+
+          '<div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#9CA3AF;">Período</div>'+
+          '<div style="font-size:1.3rem;font-weight:900;color:#0D1B3E;letter-spacing:-.5px;">'+KPI.periodo+'</div>'+
+        '</div>'+
+        '<div style="text-align:center;">'+
+          '<div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#9CA3AF;">Semana</div>'+
+          '<div style="font-size:1.05rem;font-weight:800;color:#0D1B3E;">'+KPI.semana+'</div>'+
+        '</div>'+
+        '<div style="text-align:center;">'+
+          '<div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#9CA3AF;">Meta General</div>'+
+          '<div style="font-size:1.3rem;font-weight:900;color:#0D1B3E;">'+meta100+'%</div>'+
+        '</div>'+
+        '<div style="text-align:right;background:'+kBg(cumplGlobal)+';border-radius:12px;padding:10px 20px;">'+
+          '<div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#9CA3AF;">Cumplimiento Global</div>'+
+          '<div style="font-size:2.2rem;font-weight:900;color:'+colG+';line-height:1;">'+cumplGlobal+'%</div>'+
+          '<div style="font-size:.85rem;font-weight:700;color:'+colG+';">'+kEstado(cumplGlobal)+'</div>'+
+        '</div>'+
+      '</div>'+
+      /* 5 tarjetas */
+      '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:14px;flex:1;min-height:0;">'+
+        tvKpiCard('\uD83D\uDCE6','Producci\u00f3n','vs. meta semanal', prodPct, meta100)+
+        tvKpiCard('\uD83E\uDDF9','Orden y Limpieza','checklist 5S semanal', KPI.nota_orden, meta100)+
+        tvKpiCard('\uD83C\uDFED','BPM','u\u00f1as, uniforme, higiene', KPI.nota_bpm, meta100)+
+        tvKpiCard('\u2705','Calidad','producto correcto', KPI.nota_calidad, meta100)+
+        tvKpiCard('\uD83E\uDDBA','Seguridad','EPP y cumplimiento', KPI.nota_seg, meta100)+
+      '</div>'+
+    '</div>';
+  }});
+
+  /* ══════════════════════════════════════════════════════
+     LÁMINA 2: Producción Mensual — barras grandes
+  ══════════════════════════════════════════════════════ */
+  TV.slides.push({ titulo:'Producción Mensual', fn: function(){
+    var meses = (PROD_MENSUAL&&PROD_MENSUAL.length) ? PROD_MENSUAL : [
+      {mes:'Ene',meta:344376,real:275408,pct:.80,estado:'falta stock'},
+      {mes:'Feb',meta:592364,real:494770,pct:.84,estado:'falta stock'},
+      {mes:'Mar',meta:394880,real:377992,pct:.96,estado:'falta stock'},
+      {mes:'Abr',meta:282102,real:277686,pct:.98,estado:'falta stock'},
+      {mes:'May',meta:374682,real:386288,pct:1.03,estado:'falta stock'},
+      {mes:'Jun',meta:152802,real:163940,pct:1.07,estado:''},
+      {mes:'Jul',meta:174824,real:116278,pct:.67,estado:'falta stock'},
+      {mes:'Ago',meta:407060,real:429540,pct:1.06,estado:'adelanto septiembre'},
+      {mes:'Sep',meta:205178,real:96608,pct:.47,estado:'En ejecucion'},
+      {mes:'Oct',meta:450000,real:null,pct:null,estado:''},
+      {mes:'Nov',meta:450000,real:null,pct:null,estado:''},
+      {mes:'Dic',meta:450000,real:null,pct:null,estado:''}];
+
+    var maxV   = Math.max.apply(null, meses.map(function(m){ return m.meta||0; }).concat([300000]));
+    var topPad = 68, plotH = 208, botPad = 56;
+    var barW   = 30, gap = 66;
+    var svgW   = meses.length * gap;
+    var vbH    = topPad + plotH + botPad;
+    var baseY  = topPad + plotH;
+
+    function estadoColor(s){
+      s = (s||'').toLowerCase();
+      if(!s) return '#9CA3AF';
+      if(s.indexOf('falta')    > -1) return '#B45309';
+      if(s.indexOf('adelanto') > -1) return '#4F46E5';
+      if(s.indexOf('ejecuc')   > -1) return '#1B8A4C';
+      return '#6B7280';
+    }
+    /* Parte el texto de estado en 2 lineas max. (~13 caracteres) */
+    function wrap2(s){
+      s = (s||'').trim();
+      if(s.length <= 13) return [s];
+      var w = s.split(/\s+/), a = '', b = '';
+      w.forEach(function(word){
+        if(!b && (a ? a+' '+word : word).length <= 13) a = a ? a+' '+word : word;
+        else b = b ? b+' '+word : word;
+      });
+      return b ? [a, b] : [a];
+    }
+
+    var g = '';
+    meses.forEach(function(m, i){
+      var x  = i * gap + (gap - barW) / 2;
+      var cx = x + barW / 2;
+      var mh = Math.min(plotH, Math.round((m.meta / maxV) * plotH));
+      var tieneReal = (m.real !== null && m.real !== undefined);
+
+      /* Barra meta (fondo gris) */
+      g += '<rect x="'+x+'" y="'+(baseY-mh)+'" width="'+barW+'" height="'+mh+'" fill="#E5E7EB" rx="4"/>';
+
+      if(tieneReal){
+        var rh  = Math.min(plotH, Math.round((m.real / maxV) * plotH));
+        var col = m.pct >= 0.95 ? '#1B8A4C' : m.pct >= 0.80 ? '#B45309' : '#C0392B';
+        g += '<rect x="'+x+'" y="'+(baseY-rh)+'" width="'+barW+'" height="'+rh+'" fill="'+col+'" rx="4"/>';
+        /* Etiquetas en franja fija superior - nunca se traslapan con las barras */
+        g += '<text x="'+cx+'" y="20" text-anchor="middle" font-size="17" font-weight="900" fill="'+col+'" font-family="sans-serif">'+Math.round(m.pct*100)+'%</text>';
+        g += '<text x="'+cx+'" y="37" text-anchor="middle" font-size="10.5" font-weight="700" fill="'+col+'" font-family="sans-serif">'+Number(m.real/1000).toFixed(0)+'K</text>';
+      }
+      /* Meta siempre visible, debajo del bloque real */
+      g += '<text x="'+cx+'" y="'+(tieneReal ? 52 : 37)+'" text-anchor="middle" font-size="9.5" fill="#9CA3AF" font-family="sans-serif">meta '+Number(m.meta/1000).toFixed(0)+'K</text>';
+
+      /* Nombre del mes */
+      var esCurr = tieneReal && (i+1 < meses.length) && (meses[i+1].real === null || meses[i+1].real === undefined);
+      g += '<text x="'+cx+'" y="'+(baseY+20)+'" text-anchor="middle" font-size="14" fill="'+(esCurr?'#1B8A4C':'#374151')+'" font-family="sans-serif" font-weight="'+(esCurr?'900':'600')+'">'+m.mes+(esCurr?' ●':'')+'</text>';
+
+      /* Estado (columna ESTADO del Excel objetivos.xlsx) */
+      if(m.estado){
+        var ec = estadoColor(m.estado);
+        wrap2(m.estado).forEach(function(ln, j){
+          g += '<text x="'+cx+'" y="'+(baseY+34+j*11)+'" text-anchor="middle" font-size="8.5" font-style="italic" fill="'+ec+'" font-family="sans-serif">'+ln+'</text>';
+        });
+      }
+    });
+
+    var acumReal = meses.filter(function(m){ return m.real!==null && m.real!==undefined; })
+                        .reduce(function(a,m){ return a+(m.real||0); }, 0);
+    var mesesCon = meses.filter(function(m){ return m.real!==null && m.real!==undefined; }).length;
+
+    return '<div style="width:100%;height:100%;display:flex;flex-direction:column;gap:12px;">'+
+      /* Titulo */
+      '<div style="display:flex;justify-content:space-between;align-items:flex-end;flex-shrink:0;padding:0 4px;">'+
+        '<div>'+
+          '<div style="font-size:1.4rem;font-weight:900;color:#0D1B3E;letter-spacing:-.5px;">PRODUCCIÓN MENSUAL — META VS. REAL</div>'+
+          '<div style="font-size:.95rem;color:#9CA3AF;margin-top:2px;">Total producido en el año: <strong style="color:#0D1B3E;">'+Number(acumReal).toLocaleString('es-GT')+' uds</strong> ('+mesesCon+' meses)</div>'+
+        '</div>'+
+        '<div style="display:flex;gap:18px;font-size:.9rem;align-items:center;">'+
+          '<span style="display:flex;align-items:center;gap:6px;"><span style="width:14px;height:14px;background:#E5E7EB;border-radius:3px;display:inline-block;"></span>Meta del mes</span>'+
+          '<span style="display:flex;align-items:center;gap:6px;"><span style="width:14px;height:14px;background:#1B8A4C;border-radius:3px;display:inline-block;"></span>Producción real</span>'+
+        '</div>'+
+      '</div>'+
+      /* Grafica */
+      '<div style="flex:1;min-height:0;overflow:hidden;background:#fff;border-radius:16px;padding:16px 8px 4px;box-shadow:0 2px 12px rgba(0,0,0,.07);">'+
+        '<svg viewBox="0 0 '+(svgW+20)+' '+vbH+'" style="width:100%;height:100%;" preserveAspectRatio="xMidYMid meet">'+
+          '<line x1="0" y1="'+baseY+'" x2="'+(svgW+10)+'" y2="'+baseY+'" stroke="#E5E7EB" stroke-width="1"/>'+
+          g+
+        '</svg>'+
+      '</div>'+
+    '</div>';
+  }});
+
+  /* ══════════════════════════════════════════════════════
+     LÁMINA 3: Tendencia — línea grande
+  ══════════════════════════════════════════════════════ */
+  TV.slides.push({ titulo:'Tendencia de Producci\u00f3n', fn: function(){
+    var meses = PROD_MENSUAL ? PROD_MENSUAL.filter(function(m){ return m.real!==null; }) : [];
+    if(!meses.length) meses = [{mes:'Ago',real:392000,meta:450000,pct:.87}];
+
+    var maxV = Math.max.apply(null, meses.map(function(m){ return Math.max(m.real||0, m.meta||0); }));
+    maxV = Math.max(maxV, 1);
+    var svgH = 240, svgW = meses.length > 1 ? meses.length * 100 : 300;
+    var pad = 30;
+
+    function px(i){ return pad + i * ((svgW - pad*2) / Math.max(meses.length-1, 1)); }
+    function py(v){ return svgH - (v / maxV) * svgH; }
+
+    /* Línea meta punteada */
+    var metaY = py(meses[0].meta || 450000);
+    var metaLine = '<line x1="'+pad+'" y1="'+metaY+'" x2="'+(svgW-pad)+'" y2="'+metaY+
+      '" stroke="#D1D5DB" stroke-width="2.5" stroke-dasharray="8,5"/>'+
+      '<text x="'+(svgW-pad+4)+'" y="'+(metaY+5)+'" font-size="12" fill="#9CA3AF" font-family="sans-serif">Meta</text>';
+
+    /* Área relleno bajo la curva */
+    var areaPoints = meses.map(function(m,i){ return px(i)+','+py(m.real||0); }).join(' ');
+    var areaPath   = 'M '+px(0)+','+svgH+' L '+areaPoints+' L '+px(meses.length-1)+','+svgH+' Z';
+    var area = '<path d="'+areaPath+'" fill="rgba(245,158,11,0.10)" />';
+
+    /* Línea */
+    var pts = meses.map(function(m,i){ return px(i)+','+py(m.real||0); }).join(' ');
+    var polyline = '<polyline points="'+pts+'" fill="none" stroke="#F59E0B" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>';
+
+    /* Puntos + % + valor */
+    var puntos = meses.map(function(m,i){
+      var cx = px(i), cy = py(m.real||0);
+      var col = m.pct>=0.9?'#1B8A4C':m.pct>=0.75?'#B45309':'#C0392B';
+      return '<circle cx="'+cx+'" cy="'+cy+'" r="9" fill="#fff" stroke="'+col+'" stroke-width="4"/>'+
+             '<text x="'+cx+'" y="'+(cy-18)+'" text-anchor="middle" font-size="16" font-weight="900" fill="'+col+'" font-family="sans-serif">'+Math.round((m.pct||0)*100)+'%</text>'+
+             '<text x="'+cx+'" y="'+(cy+24)+'" text-anchor="middle" font-size="11" fill="#6B7280" font-family="sans-serif">'+Number(m.real/1000).toFixed(0)+'K</text>';
+    }).join('');
+
+    /* Labels mes */
+    var labels = meses.map(function(m,i){
+      return '<text x="'+px(i)+'" y="'+(svgH+22)+'" text-anchor="middle" font-size="14" fill="#374151" font-family="sans-serif" font-weight="700">'+m.mes+'</text>';
+    }).join('');
+
+    /* Stats resumen */
+    var pcts = meses.map(function(m){ return Math.round((m.pct||0)*100); });
+    var mejor = Math.max.apply(null, pcts);
+    var peor  = Math.min.apply(null, pcts);
+    var prom  = Math.round(pcts.reduce(function(a,b){return a+b;},0)/pcts.length);
+
+    return '<div style="width:100%;height:100%;display:flex;flex-direction:column;gap:12px;">'+
+      /* Título + stats */
+      '<div style="display:flex;justify-content:space-between;align-items:center;flex-shrink:0;padding:0 4px;">'+
+        '<div>'+
+          '<div style="font-size:1.4rem;font-weight:900;color:#0D1B3E;letter-spacing:-.5px;">TENDENCIA DE PRODUCCI\u00d3N \u2014 '+new Date().getFullYear()+'</div>'+
+          '<div style="font-size:.9rem;color:#9CA3AF;margin-top:2px;">'+meses.length+' meses con datos</div>'+
+        '</div>'+
+        '<div style="display:flex;gap:24px;">'+
+          '<div style="text-align:center;background:#DCFCE7;border-radius:12px;padding:10px 18px;">'+
+            '<div style="font-size:.75rem;font-weight:700;color:#6B7280;text-transform:uppercase;">Mejor</div>'+
+            '<div style="font-size:1.8rem;font-weight:900;color:#1B8A4C;">'+mejor+'%</div>'+
+          '</div>'+
+          '<div style="text-align:center;background:#F3F4F6;border-radius:12px;padding:10px 18px;">'+
+            '<div style="font-size:.75rem;font-weight:700;color:#6B7280;text-transform:uppercase;">Prom.</div>'+
+            '<div style="font-size:1.8rem;font-weight:900;color:#374151;">'+prom+'%</div>'+
+          '</div>'+
+          '<div style="text-align:center;background:#FEE2E2;border-radius:12px;padding:10px 18px;">'+
+            '<div style="font-size:.75rem;font-weight:700;color:#6B7280;text-transform:uppercase;">Menor</div>'+
+            '<div style="font-size:1.8rem;font-weight:900;color:#C0392B;">'+peor+'%</div>'+
+          '</div>'+
+        '</div>'+
+      '</div>'+
+      /* Gráfica */
+      '<div style="flex:1;min-height:0;background:#fff;border-radius:16px;padding:20px 12px 8px;box-shadow:0 2px 12px rgba(0,0,0,.07);overflow:hidden;">'+
+        '<svg viewBox="-10 -10 '+(svgW+30)+' '+(svgH+40)+'" style="width:100%;height:100%;" preserveAspectRatio="xMidYMid meet">'+
+          area+metaLine+polyline+puntos+labels+
+        '</svg>'+
+      '</div>'+
+    '</div>';
+  }});
+
+  /* ══════════════════════════════════════════════════════
+     LÁMINA 4: Días sin accidentes — HERO grande
+  ══════════════════════════════════════════════════════ */
+  TV.slides.push({ titulo:'Seguridad \u2014 D\u00edas sin Accidentes', fn: function(){
+    var dias   = diasSinAccidente(KPI.fecha_inicio);
+    var nota   = KPI.nota_seg || 0;
+    var col    = kColor(nota);
+    var bg     = kBg(nota);
+    var estado = kEstado(nota);
+    var fechaTxt = '01/01/2026';
+    if(KPI.fecha_inicio){
+      var d = KPI.fecha_inicio instanceof Date ? KPI.fecha_inicio : new Date(KPI.fecha_inicio);
+      if(!isNaN(d)) fechaTxt = d.toLocaleDateString('es-GT');
+    }
+
+    return '<div style="width:100%;height:100%;display:grid;grid-template-columns:1fr 1fr;gap:20px;">'+
+      /* Columna izquierda: contador grande */
+      '<div style="background:#fff;border-radius:20px;box-shadow:0 6px 32px rgba(0,0,0,.10);'+
+           'display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:32px;">'+
+        '<img src="../assets/img/chatio.png" alt="Mascota Grupo CLC" style="height:180px;width:auto;max-width:65%;object-fit:contain;margin-bottom:4px;"/>'+
+        '<div style="font-size:1.1rem;font-weight:900;text-transform:uppercase;letter-spacing:.18em;color:#6B7280;">\uD83E\uDDBA D\u00edas sin Accidentes</div>'+
+        '<div style="font-size:11rem;font-weight:900;line-height:1;color:#1B8A4C;letter-spacing:-6px;text-shadow:0 4px 20px rgba(27,138,76,.25);">'+dias+'</div>'+
+        '<div style="font-size:1.1rem;color:#9CA3AF;font-weight:600;">Desde: <strong style="color:#374151;">'+fechaTxt+'</strong></div>'+
+        '<div style="width:80%;height:4px;background:#E5E7EB;border-radius:2px;">'+
+          '<div style="width:100%;height:100%;background:linear-gradient(90deg,#1B8A4C,#71dd37);border-radius:2px;"></div>'+
+        '</div>'+
+        '<div style="font-size:1rem;color:#1B8A4C;font-weight:700;">\u2714 Sin incidentes registrados</div>'+
+      '</div>'+
+      /* Columna derecha: KPI seguridad + semana */
+      '<div style="display:flex;flex-direction:column;gap:16px;">'+
+        /* KPI Seguridad grande */
+        '<div style="background:#fff;border-radius:20px;box-shadow:0 6px 32px rgba(0,0,0,.10);'+
+             'flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;gap:12px;">'+
+          '<div style="position:absolute;display:none;"></div>'+
+          '<div style="font-size:.85rem;font-weight:900;text-transform:uppercase;letter-spacing:.15em;color:#6B7280;">KPI Seguridad Semanal</div>'+
+          '<div style="font-size:6rem;font-weight:900;line-height:1;color:'+col+';">'+nota+'<span style="font-size:3.5rem;">%</span></div>'+
+          '<div style="font-size:1.2rem;font-weight:800;color:'+col+';">'+estado+'</div>'+
+          '<div style="width:85%;background:#F3F4F6;border-radius:999px;height:14px;position:relative;">'+
+            '<div style="position:absolute;left:0;top:0;height:100%;width:'+Math.min(nota,100)+'%;background:'+col+';border-radius:999px;"></div>'+
+            '<div style="position:absolute;left:85%;top:-5px;width:3px;height:24px;background:#374151;border-radius:2px;"></div>'+
+          '</div>'+
+          '<div style="font-size:.9rem;color:#9CA3AF;font-weight:600;">Meta: 85%</div>'+
+        '</div>'+
+        /* Info semana */
+        '<div style="background:'+bg+';border-radius:16px;padding:20px 28px;flex-shrink:0;">'+
+          '<div style="font-size:1rem;font-weight:700;color:'+col+';">EPP + Cumplimiento de normas</div>'+
+          '<div style="font-size:.9rem;color:#6B7280;margin-top:4px;">Semana: <strong>'+KPI.semana+'</strong></div>'+
+          '<div style="font-size:.9rem;color:#6B7280;margin-top:2px;">Período: <strong>'+KPI.periodo+'</strong></div>'+
+        '</div>'+
+      '</div>'+
+    '</div>';
+  }});
+
+  /* ══ Láminas PDF ══ */
+  TV.pdfPages.forEach(function(dataUrl, i){
+    TV.slides.push({ titulo:'PDF \u2014 P\u00e1g. '+(i+1), fn:(function(url){ return function(){
+      return '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#111;">'+
+        '<img src="'+url+'" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,.4);"/></div>';
+    };})(dataUrl) });
+  });
+}
+
+/* ─── Card helpers ─── */
+function tvCard(icon, label, val, sub, cls, rawHtml){
+  // Compat legacy — icono emoji
+  return tvCard2(null, label, val, sub, cls, rawHtml, icon);
+}
+function tvCard2(bxIcon, label, val, sub, cls, extra, legacyIcon){
+  var iconHtml = bxIcon
+    ? '<i class="bx '+bxIcon+'" style="font-size:1.6rem;margin-bottom:5px;display:block;"></i>'
+    : (legacyIcon?'<span style="font-size:1.4rem;display:block;margin-bottom:4px;">'+legacyIcon+'</span>':'');
+  return '<div class="tv-card '+(cls||'c-blue')+'">' +
+    iconHtml +
+    '<div class="tv-card-label">'+label+'</div>' +
+    '<div class="tv-card-val">'+val+'</div>' +
+    '<div class="tv-card-sub">'+sub+'</div>' +
+    (extra?'<div style="width:100%;">'+extra+'</div>':'') +
+  '</div>';
+}
+
+/* ═══════════════════════════════════════════════════════════
+   EVITAR QUE LA PANTALLA / TV SE APAGUE (Screen Wake Lock)
+   ═══════════════════════════════════════════════════════════ */
+var TVWake = {
+  lock: null, _v: null, _draw: null, _reintento: null,
+
+  async pedir(){
+    /* API moderna: navigator.wakeLock (Chrome/Edge/Android TV) */
+    try{
+      if('wakeLock' in navigator && document.visibilityState === 'visible'){
+        if(TVWake.lock) return true;
+        TVWake.lock = await navigator.wakeLock.request('screen');
+        TVWake.lock.addEventListener('release', function(){ TVWake.lock = null; });
+        console.log('[WakeLock] activo — la pantalla no se apagará');
+        return true;
+      }
+    }catch(e){ console.warn('[WakeLock] no disponible:', e.message); }
+    /* Fallback: video/canvas en bucle para mantener el compositor activo */
+    TVWake._fallbackVideo();
+    return false;
+  },
+
+  liberar(){
+    try{ if(TVWake.lock){ TVWake.lock.release(); TVWake.lock = null; } }catch(e){}
+    clearInterval(TVWake._draw); TVWake._draw = null;
+    if(TVWake._v){ try{ TVWake._v.pause(); }catch(e){} }
+  },
+
+  _fallbackVideo(){
+    if(TVWake._v){ TVWake._v.play().catch(function(){}); return; }
+    try{
+      var c = document.createElement('canvas'); c.width = 2; c.height = 2;
+      var ctx = c.getContext('2d');
+      var v = document.createElement('video');
+      v.muted = true; v.defaultMuted = true; v.loop = true;
+      v.setAttribute('muted',''); v.setAttribute('playsinline','');
+      v.style.cssText = 'position:fixed;left:0;top:0;width:1px;height:1px;opacity:0;pointer-events:none;';
+      if(c.captureStream) v.srcObject = c.captureStream(2);
+      document.body.appendChild(v);
+      TVWake._v = v;
+      TVWake._draw = setInterval(function(){
+        ctx.fillStyle = (Date.now() % 2) ? '#000' : '#010101';
+        ctx.fillRect(0, 0, 2, 2);
+      }, 1000);
+      v.play().catch(function(){});
+      console.log('[WakeLock] usando fallback de video');
+    }catch(e){ console.warn('[WakeLock] fallback falló:', e.message); }
+  }
+};
+/* Reintentar cuando la pestaña vuelve a estar visible (el lock se suelta al ocultarse) */
+document.addEventListener('visibilitychange', function(){
+  if(document.visibilityState === 'visible') TVWake.pedir();
+});
+document.addEventListener('fullscreenchange', function(){ TVWake.pedir(); });
+/* Pedirlo ya y reintentar cada 30s por si el navegador lo rechaza al inicio */
+TVWake.pedir();
+window.addEventListener('load', function(){ TVWake.pedir(); });
+TVWake._reintento = setInterval(function(){ if(!TVWake.lock) TVWake.pedir(); }, 30000);
+
+/* ─── Motor ─── */
+function iniciarTV(){
+  TVWake.pedir();   /* el clic en "Modo TV" es un gesto de usuario válido */
+  tvBuildSlides();
+  TV.idx     = 0;
+  TV.secs    = parseInt(document.getElementById('tvSecsIn').value)||40;
+  TV.secsLeft= TV.secs;
+  TV.paused  = false;
+  document.getElementById('tvBtnPause').textContent = '⏸ Pausa';
+  document.getElementById('tvOverlay').classList.add('activo');
+  tvShow(0);
+  tvStartTimer();
+  TV.relojT = setInterval(tvTickReloj, 1000);
+  document.addEventListener('keydown', tvKey);
+
+  /* ── Auto-hide barra: aparece 3s al mover el mouse, luego se oculta ── */
+  TV._barHideT = null;
+  function tvShowBar(){
+    var bar = document.getElementById('tvBar');
+    if(!bar) return;
+    bar.classList.add('tv-bar-visible');
+    clearTimeout(TV._barHideT);
+    TV._barHideT = setTimeout(function(){
+      bar.classList.remove('tv-bar-visible');
+    }, 3000);
+  }
+  /* Mostrar también si el mouse entra a la barra misma */
+  var bar = document.getElementById('tvBar');
+  if(bar){
+    bar.addEventListener('mouseenter', function(){
+      clearTimeout(TV._barHideT);
+      bar.classList.add('tv-bar-visible');
+    });
+    bar.addEventListener('mouseleave', function(){
+      TV._barHideT = setTimeout(function(){
+        bar.classList.remove('tv-bar-visible');
+      }, 1500);
+    });
+  }
+  var overlay = document.getElementById('tvOverlay');
+  if(overlay) overlay.addEventListener('mousemove', tvShowBar);
+  TV._tvShowBar = tvShowBar; /* guardar ref para limpiar */
+}
+
+function cerrarTV(){
+  clearInterval(TV.timer); TV.timer = null;
+  clearInterval(TV.relojT); TV.relojT = null;
+  clearTimeout(TV._barHideT);
+  var overlay = document.getElementById('tvOverlay');
+  if(overlay && TV._tvShowBar) overlay.removeEventListener('mousemove', TV._tvShowBar);
+  document.getElementById('tvOverlay').classList.remove('activo');
+  document.removeEventListener('keydown', tvKey);
+}
+
+function tvShow(idx){
+  var s = TV.slides[idx];
+  var esPDF = s.titulo.indexOf('PDF') === 0;
+
+  // Ocultar header en láminas PDF para máximo espacio
+  var hdr = document.getElementById('tvHeader');
+  if(hdr) hdr.style.display = esPDF ? 'none' : 'flex';
+
+  // Quitar padding del contenido en PDF
+  var cnt = document.getElementById('tvContent');
+  cnt.style.padding = esPDF ? '0' : '16px 20px';
+
+  cnt.innerHTML = s.fn();
+
+  // ── Marca de agua CLC en cada lámina (excepto PDF) ──
+  if(!esPDF){
+    var wm = document.createElement('img');
+    wm.src = '../assets/img/clc.png';
+    wm.alt = 'Grupo CLC';
+    wm.onerror = function(){ this.style.display = 'none'; };
+    wm.style.cssText = 'position:absolute;bottom:14px;right:20px;height:32px;width:auto;opacity:.16;pointer-events:none;z-index:20;';
+    cnt.style.position = 'relative';
+    cnt.appendChild(wm);
+  }
+
+  document.getElementById('tvTituloSlide').textContent = s.titulo;
+  document.getElementById('tvBarNum').textContent = (idx+1)+' / '+TV.slides.length;
+  document.getElementById('tvBarName').textContent = s.titulo;
+  TV.secsLeft = TV.secs;
+  tvRefreshBar();
+  tvRefreshDots();
+
+  // ── Actualizar ícono de marca en el header ──
+  if(s.brandIdx !== undefined){
+    tvSetBrandHeader(s.brandIdx);
+  } else {
+    var wrap = document.getElementById('tvBrandIconWrap');
+    if(wrap) wrap.style.opacity = '0';
+  }
+}
+
+function tvStartTimer(){
+  clearInterval(TV.timer);
+  TV.timer = setInterval(function(){
+    if(TV.paused) return;
+    TV.secsLeft--;
+    tvRefreshBar();
+    if(TV.secsLeft<=0) tvNext();
+  }, 1000);
+}
+
+function tvRefreshBar(){
+  var pct = Math.max(0,(TV.secsLeft/TV.secs)*100);
+  document.getElementById('tvBarFill').style.width = pct+'%';
+  document.getElementById('tvBarLabel').textContent = TV.secsLeft+'s';
+  var col = TV.secsLeft>TV.secs*.5?'#696cff':TV.secsLeft>TV.secs*.2?'#fd7e14':'#ff3e1d';
+  document.getElementById('tvBarFill').style.background = col;
+  document.getElementById('tvBarLabel').style.color = col;
+}
+
+function tvRefreshDots(){
+  var html='';
+  TV.slides.forEach(function(_,i){
+    html+='<div class="tv-dot'+(i===TV.idx?' act':'')+'" onclick="tvGoTo('+i+')"></div>';
+  });
+  document.getElementById('tvDots').innerHTML=html;
+}
+
+function tvNext(){ TV.idx=(TV.idx+1)%TV.slides.length; tvShow(TV.idx); }
+function tvPrev(){ TV.idx=(TV.idx-1+TV.slides.length)%TV.slides.length; tvShow(TV.idx); }
+function tvGoTo(i){ TV.idx=i; TV.secsLeft=TV.secs; tvShow(i); }
+
+function tvTogglePause(){
+  TV.paused=!TV.paused;
+  document.getElementById('tvBtnPause').textContent = TV.paused?'▶ Reanudar':'⏸ Pausa';
+}
+
+function tvSetSecs(v){ var n=parseInt(v); if(isNaN(n)||n<5)n=5; if(n>300)n=300; TV.secs=n; TV.secsLeft=n; document.getElementById('tvSecsIn').value=n; tvRefreshBar(); }
+
+function tvTickReloj(){
+  var el=document.getElementById('tvReloj');
+  if(el) el.textContent=new Date().toLocaleTimeString('es-GT');
+}
+
+function tvKey(e){
+  switch(e.key){
+    case 'ArrowRight': case ' ': tvNext(); break;
+    case 'ArrowLeft':            tvPrev(); break;
+    case 'Escape':               cerrarTV(); break;
+    case 'p': case 'P':         tvTogglePause(); break;
+  }
+}
+
+/* ─── Carga de PDF con PDF.js → imagen por página ─── */
+function tvLoadPDF(file){
+  if(!file) return;
+
+  // Mostrar estado en el botón
+  var btnPDF = document.querySelector('[onclick*="fiPDF2"]');
+  if(btnPDF){ btnPDF.innerHTML='<i class="bx bx-loader-alt bx-spin me-1"></i> Procesando...'; btnPDF.disabled=true; }
+
+  var reader = new FileReader();
+  reader.onload = function(e){
+    var arrayBuf = e.target.result;
+
+    // Configurar PDF.js worker inline
+    if(window.pdfjsLib){
+      pdfjsLib.GlobalWorkerOptions.workerSrc =
+        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    } else {
+      alert('PDF.js no cargó. Verifica conexión a internet.');
+      if(btnPDF){ btnPDF.innerHTML='<i class="bx bx-file-pdf me-1"></i> PDF + TV'; btnPDF.disabled=false; }
+      return;
+    }
+
+    pdfjsLib.getDocument({ data: arrayBuf }).promise.then(function(pdfDoc){
+      var total = pdfDoc.numPages;
+      TV.pdfPages = [];
+      var scale = 2.0; // alta resolución para TV
+
+      // Renderizar cada página a canvas → dataURL PNG
+      function renderPage(num){
+        pdfDoc.getPage(num).then(function(page){
+          var vp = page.getViewport({ scale: scale });
+          var canvas = document.createElement('canvas');
+          canvas.width  = vp.width;
+          canvas.height = vp.height;
+          var ctx = canvas.getContext('2d');
+          page.render({ canvasContext: ctx, viewport: vp }).promise.then(function(){
+            TV.pdfPages.push(canvas.toDataURL('image/png'));
+            if(num < total){
+              renderPage(num + 1);
+            } else {
+              // Todas las páginas listas → arrancar TV
+              if(btnPDF){ btnPDF.innerHTML='<i class="bx bx-file-pdf me-1"></i> PDF + TV'; btnPDF.disabled=false; }
+              iniciarTV();
+            }
+          });
+        });
+      }
+      renderPage(1);
+
+    }).catch(function(err){
+      alert('Error al leer el PDF: ' + err.message);
+      if(btnPDF){ btnPDF.innerHTML='<i class="bx bx-file-pdf me-1"></i> PDF + TV'; btnPDF.disabled=false; }
+    });
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+/* Exponemos iniciarTV como alias para los botones existentes */
+var iniciarTVMode = iniciarTV;
+</script>
+
+<script>
+/* ══════════════════════════════════════════════
+   PRESENTADOR PPTX — LÓGICA COMPLETA
+   ══════════════════════════════════════════════ */
+
+var SLIDES       = [];   // Array de {img: dataURL} o {texto: string}
+var slideActual  = 0;
+var segsTotal    = 40;
+var segsRestantes= 40;
+var timerInterval= null;
+var enPausa      = false;
+
+/* ── Abrir / cerrar modal PPTX ── */
+function abrirModalPPTX(){
+  document.getElementById('modalPPTX').classList.add('abierto');
+}
+function cerrarModalPPTX(){
+  document.getElementById('modalPPTX').classList.remove('abierto');
+}
+
+/* ── Drag & drop modal ── */
+(function(){
+  var dz2 = document.getElementById('dzPptx');
+  if(!dz2) return;
+  dz2.addEventListener('dragover', function(e){ e.preventDefault(); dz2.style.borderColor='#696cff'; });
+  dz2.addEventListener('dragleave', function(){ dz2.style.borderColor='#d9dee3'; });
+  dz2.addEventListener('drop', function(e){
+    e.preventDefault(); dz2.style.borderColor='#d9dee3';
+    if(e.dataTransfer.files[0]) procesarPPTX(e.dataTransfer.files[0]);
+  });
+})();
+
+function cargarPPTX(inp){
+  if(inp.files[0]) procesarPPTX(inp.files[0]);
+}
+
+function procesarPPTX(file){
+  var msg = document.getElementById('pptxMsg');
+  msg.style.display='block'; msg.style.color='#696cff';
+  msg.innerHTML='<i class="bx bx-loader-alt bx-spin me-1"></i>Procesando diapositivas...';
+
+  var reader = new FileReader();
+  reader.onload = function(e){
+    JSZip.loadAsync(e.target.result).then(function(zip){
+      /* Listar imágenes de medios en el pptx */
+      var mediaFiles = [];
+      zip.forEach(function(path, entry){
+        if(/^ppt\/media\//i.test(path) && /\.(png|jpg|jpeg|gif|bmp|webp)$/i.test(path)){
+          mediaFiles.push({path: path, entry: entry});
+        }
+      });
+
+      /* Ordenar por nombre numérico */
+      mediaFiles.sort(function(a,b){
+        var na = parseInt((a.path.match(/(\d+)/) || [0,0])[1]);
+        var nb = parseInt((b.path.match(/(\d+)/) || [0,0])[1]);
+        return na - nb;
+      });
+
+      /* También extraer slides en orden como fallback */
+      var slideEntries = [];
+      zip.forEach(function(path, entry){
+        if(/^ppt\/slides\/slide\d+\.xml$/i.test(path)) slideEntries.push(path);
+      });
+      slideEntries.sort(function(a,b){
+        var na = parseInt((a.match(/slide(\d+)/) || [0,0])[1]);
+        var nb = parseInt((b.match(/slide(\d+)/) || [0,0])[1]);
+        return na - nb;
+      });
+
+      /* Intentar obtener imágenes thumbnail (ppt/thumbnails/) */
+      var thumbFiles = [];
+      zip.forEach(function(path, entry){
+        if(/^docProps\/thumbnail\.(png|jpg|jpeg)$/i.test(path)){
+          thumbFiles.push({path: path, entry: entry});
+        }
+      });
+
+      /* Cargar media como base64 */
+      if(mediaFiles.length > 0){
+        var promises = mediaFiles.map(function(mf){
+          return mf.entry.async('base64').then(function(b64){
+            var ext = mf.path.split('.').pop().toLowerCase();
+            var mime = ext==='jpg'||ext==='jpeg' ? 'image/jpeg' :
+                       ext==='png'  ? 'image/png'  :
+                       ext==='gif'  ? 'image/gif'  : 'image/png';
+            return {img: 'data:'+mime+';base64,'+b64, path: mf.path};
+          });
+        });
+        Promise.all(promises).then(function(results){
+          /* Agrupar por slide — heurística: tantas imágenes como slides o usar todas */
+          SLIDES = results.map(function(r){ return {img: r.img}; });
+          msg.style.color='#16a34a';
+          msg.innerHTML='<i class="bx bx-check-circle me-1"></i>'+SLIDES.length+' láminas listas. ¡Iniciando presentación!';
+          setTimeout(function(){
+            cerrarModalPPTX();
+            iniciarPresentador();
+          }, 800);
+        });
+      } else if(slideEntries.length > 0){
+        /* No hay imágenes raster — mostrar slides como texto plano */
+        var promises2 = slideEntries.map(function(path){
+          return zip.file(path).async('string').then(function(xml){
+            /* Extraer texto del XML de la diapositiva */
+            var texts = [];
+            var matches = xml.match(/<a:t>([^<]*)<\/a:t>/g) || [];
+            matches.forEach(function(m){
+              var t = m.replace(/<[^>]+>/g,'').trim();
+              if(t) texts.push(t);
+            });
+            return {texto: texts.join(' · ') || '(Diapositiva sin texto visible)'};
+          });
+        });
+        Promise.all(promises2).then(function(results){
+          SLIDES = results;
+          msg.style.color='#16a34a';
+          msg.innerHTML='<i class="bx bx-check-circle me-1"></i>'+SLIDES.length+' diapositivas (modo texto). Se recomienda guardar como imágenes en PPT.';
+          setTimeout(function(){
+            cerrarModalPPTX();
+            iniciarPresentador();
+          }, 900);
+        });
+      } else {
+        msg.style.color='#dc2626';
+        msg.innerHTML='<i class="bx bx-error me-1"></i>No se encontraron diapositivas en el archivo.';
+      }
+    }).catch(function(err){
+      msg.style.color='#dc2626';
+      msg.innerHTML='<i class="bx bx-error me-1"></i>Error al leer el archivo: '+err.message;
+    });
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+/* ── Presentador ── */
+function iniciarPresentador(){
+  if(!SLIDES.length){ alert('No hay diapositivas cargadas.'); return; }
+  slideActual  = 0;
+  segsTotal    = parseInt(document.getElementById('inputSecs').value) || 40;
+  segsRestantes= segsTotal;
+  enPausa      = false;
+  document.getElementById('btnPlayPause').textContent = '⏸ Pausar';
+  document.getElementById('presentadorOverlay').classList.add('activo');
+  mostrarSlide(slideActual);
+  arrancarTimer();
+  /* Escuchar teclado */
+  document.addEventListener('keydown', teclaPresent);
+}
+
+function cerrarPresentador(){
+  clearInterval(timerInterval);
+  timerInterval = null;
+  document.getElementById('presentadorOverlay').classList.remove('activo');
+  document.removeEventListener('keydown', teclaPresent);
+  SLIDES = [];
+}
+
+function mostrarSlide(idx){
+  var canvas = document.getElementById('slideCanvas');
+  var slide  = SLIDES[idx];
+  if(!slide){ return; }
+
+  if(slide.img){
+    canvas.innerHTML = '<img src="'+slide.img+'" alt="Diapositiva '+(idx+1)+'" />';
+  } else {
+    canvas.innerHTML =
+      '<div class="slide-placeholder">' +
+      '<h1>📋 Diapositiva '+(idx+1)+'</h1>' +
+      '<p style="max-width:800px;font-size:1.2rem;">'+slide.texto+'</p>' +
+      '</div>';
+  }
+  document.getElementById('slideCounter').textContent = (idx+1)+' / '+SLIDES.length;
+  segsRestantes = segsTotal;
+  actualizarBarra();
+}
+
+function arrancarTimer(){
+  clearInterval(timerInterval);
+  timerInterval = setInterval(function(){
+    if(enPausa) return;
+    segsRestantes--;
+    actualizarBarra();
+    if(segsRestantes <= 0){
+      irSiguiente();
+    }
+  }, 1000);
+}
+
+function actualizarBarra(){
+  var pct = Math.max(0, (segsRestantes / segsTotal) * 100);
+  document.getElementById('timerFill').style.width = pct+'%';
+  document.getElementById('timerLabel').textContent = segsRestantes+'s';
+  /* Color: verde → amarillo → rojo */
+  var color = segsRestantes > segsTotal*0.5 ? '#71dd37' :
+              segsRestantes > segsTotal*0.2 ? '#f59e0b' : '#ef4444';
+  document.getElementById('timerFill').style.background = color;
+  document.getElementById('timerLabel').style.color = color;
+}
+
+function irSiguiente(){
+  if(slideActual < SLIDES.length - 1){
+    slideActual++;
+    mostrarSlide(slideActual);
+  } else {
+    /* Última lámina: detener */
+    clearInterval(timerInterval);
+    timerInterval = null;
+    document.getElementById('timerLabel').textContent = 'FIN';
+    document.getElementById('timerFill').style.width = '0%';
+  }
+}
+
+function irAnterior(){
+  if(slideActual > 0){
+    slideActual--;
+    mostrarSlide(slideActual);
+  }
+}
+
+function togglePlayPause(){
+  enPausa = !enPausa;
+  document.getElementById('btnPlayPause').textContent = enPausa ? '▶ Reanudar' : '⏸ Pausar';
+}
+
+function cambiarSecs(val){
+  var n = parseInt(val);
+  if(isNaN(n)||n<5) n=5;
+  if(n>300) n=300;
+  segsTotal    = n;
+  segsRestantes= n;
+  document.getElementById('inputSecs').value = n;
+  actualizarBarra();
+}
+
+function teclaPresent(e){
+  switch(e.key){
+    case 'ArrowRight': case 'ArrowDown': case ' ': irSiguiente(); break;
+    case 'ArrowLeft':  case 'ArrowUp':             irAnterior();  break;
+    case 'Escape':                                 cerrarPresentador(); break;
+    case 'p': case 'P':                            togglePlayPause(); break;
+  }
+}
+</script>
+</body>
+</html>
